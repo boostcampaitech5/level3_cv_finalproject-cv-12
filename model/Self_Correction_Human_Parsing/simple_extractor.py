@@ -54,11 +54,11 @@ def get_arguments():
     """
     parser = argparse.ArgumentParser(description="Self Correction for Human Parsing")
 
-    parser.add_argument("--dataset", type=str, default='lip', choices=['lip', 'atr', 'pascal'])
-    parser.add_argument("--model-restore", type=str, default='', help="restore pretrained model parameters.")
+    parser.add_argument("--dataset", type=str, default='atr', choices=['lip', 'atr', 'pascal'])
+    parser.add_argument("--model-restore", type=str, default='/opt/ml/checkpoints/exp-schp-201908301523-atr.pth', help="restore pretrained model parameters.")
     parser.add_argument("--gpu", type=str, default='0', help="choose gpu device.")
     parser.add_argument("--input-dir", type=str, default='', help="path of input image folder.")
-    parser.add_argument("--output-dir", type=str, default='', help="path of output image folder.")
+    parser.add_argument("--output-dir", type=str, default='/opt/ml/user_db/schp/buffer', help="path of output image folder.")
     parser.add_argument("--logits", action='store_true', default=False, help="whether to save the logits.")
 
     return parser.parse_args()
@@ -88,9 +88,11 @@ def get_palette(num_cls):
     return palette
 
 
-def main():
+def main(target_buffer_dir):
+    
     args = get_arguments()
-
+    args.input_dir = target_buffer_dir
+    
     gpus = [int(i) for i in args.gpu.split(',')]
     assert len(gpus) == 1
     if not args.gpu == 'None':
@@ -151,5 +153,5 @@ def main():
     return
 
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main(target_buffer_dir)

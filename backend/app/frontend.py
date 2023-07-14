@@ -18,23 +18,37 @@ root_password = 'a'
 
 def main():
     st.title("Mask Classification Model")
-    uploaded_file = st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"])
+    
+    uploaded_target = st.file_uploader("Choose an target image", type=["jpg", "jpeg", "png"])
 
-    if uploaded_file:
-        image_bytes = uploaded_file.getvalue()
-        image = Image.open(io.BytesIO(image_bytes))
+    uploaded_garment = st.file_uploader("Choose an garment image", type=["jpg", "jpeg", "png"])
 
-        st.image(image, caption='Uploaded Image')
+    if uploaded_target and uploaded_garment:
+        
+        target_bytes = uploaded_target.getvalue()
+        target_img = Image.open(io.BytesIO(target_bytes))
+
+        st.image(target_img, caption='Uploaded target Image')
+        st.write("Classifying...")
+
+        garment_bytes = uploaded_garment.getvalue()
+        garment_img = Image.open(io.BytesIO(garment_bytes))
+
+        st.image(garment_img, caption='Uploaded garment Image')
         st.write("Classifying...")
 
         # 기존 stremalit 코드
         # _, y_hat = get_prediction(model, image_bytes)
         # label = config['classes'][y_hat.item()]
         files = [
-            ('files', (uploaded_file.name, image_bytes,
-                       uploaded_file.type))
+            ('files', (uploaded_target.name, target_bytes,
+                       uploaded_target.type))
+            ,
+            ('files', (uploaded_garment.name, garment_bytes,
+                       uploaded_garment.type))
         ]
         response = requests.post("http://localhost:8001/order", files=files)
+        
         label = response.json()["products"][0]["result"]
         st.write(f'label is {label}')
 

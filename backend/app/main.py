@@ -7,6 +7,18 @@ from typing import List, Union, Optional, Dict, Any
 from datetime import datetime
 
 from app.model import MyEfficientNet, get_model, get_config, predict_from_image_byte
+from PIL import Image
+import io
+
+# scp setting
+import sys
+sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/Self_Correction_Human_Parsing/')
+from simple_extractor import main
+
+# openpose
+sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/pytorch-openpose/')
+from extract_keypoint import main_openpose
+
 
 app = FastAPI()
 
@@ -70,18 +82,50 @@ async def get_order(order_id: UUID) -> Union[Order, dict]:
 def get_order_by_id(order_id: UUID) -> Optional[Order]:
     return next((order for order in orders if order.id == order_id), None)
 
-
+# post!!
 @app.post("/order", description="주문을 요청합니다")
 async def make_order(files: List[UploadFile] = File(...),
 #  def make_order(files: List[UploadFile] = File(...),
                      model: MyEfficientNet = Depends(get_model),
                      config: Dict[str, Any] = Depends(get_config)):
     products = []
-    for file in files:
-        image_bytes = await file.read()
-        inference_result = predict_from_image_byte(model=model, image_bytes=image_bytes, config=config)
-        product = InferenceImageProduct(result=inference_result)
-        products.append(product)
+
+    # target:files[0], garment:files[1]
+
+    target_bytes = await files[0].read()
+    garment_bytes = await files[1].read()
+    
+    # TODO image byte 풀기
+    target_image = Image.open(io.BytesIO(target_bytes))
+    target_image = target_image.convert("RGB")
+
+    garment_image = Image.open(io.BytesIO(garment_bytes))
+    garment_image = garment_image.convert("RGB")
+
+    target_buffer_dir = '/opt/ml/user_db/input/buffer/'
+    target_image.save('/opt/ml/user_db/input/buffer/target.jpg')
+    target_image.save('/opt/ml/user_db/input/target.jpg')
+
+    garment_image.save('/opt/ml/user_db/input/buffer/garment.jpg')
+    garment_image.save('/opt/ml/user_db/input/garment.jpg')
+
+    # schp 넣기 - (1024, 784), (512, 384)
+    main(target_buffer_dir)
+    
+    # openpose 뽑기
+    output_openpose_buffer_dir = '/opt/ml/user_db/openpose/buffer'
+    main_openpose(target_buffer_dir, output_openpose_buffer_dir)
+    
+
+
+    
+    # ladi-vton 넣기
+    
+    
+    inference_result = predict_from_image_byte(model=model, image_bytes=image_bytes, config=config)
+    product = InferenceImageProduct(result=inference_result)
+    products.append(product)
+
 
     new_order = Order(products=products)
     orders.append(new_order)

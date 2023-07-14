@@ -13,7 +13,7 @@ OUTPUT = '/opt/ml/pytorch-openpose/output/sw2_0.png'
 
 
 # Body, Hand model load
-body_estimation = Body('model/body_pose_model.pth')
+body_estimation = Body('/opt/ml/checkpoints/body_pose_model.pth')
 hand_estimation = Hand('model/hand_pose_model.pth')
 
 # image read
