@@ -29,9 +29,7 @@ def main_openpose(target_buffer_dir, output_buffer_dir):
     # image read
     # test_image = test_image
     oriImg = cv2.imread(test_image)  # B,G,R order
-    print('*******', test_image)
-    print('*******',oriImg.shape)
-    # oriImg = cv2.resize(oriImg, (384, 512)) # resize
+    oriImg = cv2.resize(oriImg, (384, 512)) # resize
 
     # body_estimation foreward
     candidate, subset = body_estimation(oriImg)
