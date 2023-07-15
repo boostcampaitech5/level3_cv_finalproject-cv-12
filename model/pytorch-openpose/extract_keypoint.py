@@ -41,6 +41,6 @@ def main_openpose(target_buffer_dir, output_buffer_dir):
     }
 
     # json 파일 저장
-    with open(f'{output_buffer_dir}/{img_name[:-3]}.json', 'w') as f:
+    with open(f'{output_buffer_dir}/{img_name[:-4]}.json', 'w') as f:
         json.dump(json_dict, f, indent=4)
 

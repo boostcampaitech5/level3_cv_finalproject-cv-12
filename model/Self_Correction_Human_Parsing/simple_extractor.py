@@ -88,7 +88,7 @@ def get_palette(num_cls):
     return palette
 
 
-def main(target_buffer_dir):
+def main_schp(target_buffer_dir):
     
     args = get_arguments()
     args.input_dir = target_buffer_dir

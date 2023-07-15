@@ -11,9 +11,9 @@ from PIL import Image
 import io
 
 # scp setting
-import sys
+import sys, os
 sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/Self_Correction_Human_Parsing/')
-from simple_extractor import main
+from simple_extractor import main_schp
 
 # openpose
 sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/pytorch-openpose/')
@@ -95,32 +95,33 @@ async def make_order(files: List[UploadFile] = File(...),
     target_bytes = await files[0].read()
     garment_bytes = await files[1].read()
     
-    # TODO image byte 풀기
+    # TODO image byte 
     target_image = Image.open(io.BytesIO(target_bytes))
     target_image = target_image.convert("RGB")
 
     garment_image = Image.open(io.BytesIO(garment_bytes))
     garment_image = garment_image.convert("RGB")
 
-    target_buffer_dir = '/opt/ml/user_db/input/buffer/'
-    target_image.save('/opt/ml/user_db/input/buffer/target.jpg')
-    target_image.save('/opt/ml/user_db/input/target.jpg')
+    input_dir = '/opt/ml/user_db/input/'
 
-    garment_image.save('/opt/ml/user_db/input/buffer/garment.jpg')
-    garment_image.save('/opt/ml/user_db/input/garment.jpg')
+    os.makedirs(f'{input_dir}/buffer', exist_ok=True)
 
-    # schp 넣기 - (1024, 784), (512, 384)
-    main(target_buffer_dir)
+    target_image.save(f'{input_dir}/target.jpg')
+    target_image.save(f'{input_dir}/buffer/target.jpg')
+
+    garment_image.save(f'{input_dir}/garment.jpg')
+    garment_image.save(f'{input_dir}/buffer/garment.jpg')
+
+    # schp  - (1024, 784), (512, 384)
+    target_buffer_dir = f'{input_dir}/buffer'
+    main_schp(target_buffer_dir)
     
-    # openpose 뽑기
+    # openpose 
     output_openpose_buffer_dir = '/opt/ml/user_db/openpose/buffer'
+    os.makedirs(output_openpose_buffer_dir, exist_ok=True)
     main_openpose(target_buffer_dir, output_openpose_buffer_dir)
     
-
-
-    
-    # ladi-vton 넣기
-    
+    # ladi-vton 
     
     inference_result = predict_from_image_byte(model=model, image_bytes=image_bytes, config=config)
     product = InferenceImageProduct(result=inference_result)
