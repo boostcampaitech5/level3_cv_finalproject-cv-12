@@ -13,7 +13,7 @@ from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 from torchvision import transforms
 from tqdm import tqdm
 
-from .generate_fid_stats import make_custom_stats
+from generate_fid_stats import make_custom_stats ##수정
 
 
 class GTTestDataset(torch.utils.data.Dataset):

@@ -21,7 +21,8 @@ from diffusers.utils import deprecate
 from diffusers.utils import is_accelerate_available, randn_tensor
 from packaging import version
 from transformers import CLIPTextModel, CLIPTokenizer
-from src.utils.data_utils import mask_features
+# from src.utils.data_utils import mask_features ## 수정
+from data_utils import mask_features ## 수정
 
 
 class StableDiffusionTryOnePipeline(DiffusionPipeline):

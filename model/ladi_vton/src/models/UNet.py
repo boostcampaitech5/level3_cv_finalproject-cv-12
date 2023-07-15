@@ -1,4 +1,4 @@
-from .unet_parts import *
+from unet_parts import * ## 수정
 
 
 class UNetVanilla(nn.Module):

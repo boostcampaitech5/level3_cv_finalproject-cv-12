@@ -18,8 +18,10 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 from PIL import Image, ImageDraw
 
-from src.utils.posemap import get_coco_body25_mapping
-from src.utils.posemap import kpoint_to_heatmap
+import sys
+sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton/src/utils')
+from posemap import get_coco_body25_mapping
+from posemap import kpoint_to_heatmap
 
 
 class VitonHDDataset(data.Dataset):

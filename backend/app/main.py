@@ -16,10 +16,21 @@ sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/Self_Correction_Huma
 from simple_extractor import main_schp
 
 # openpose
-sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/pytorch-openpose/')
+sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/pytorch_openpose/')
 from extract_keypoint import main_openpose
 
+# ladi
+sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton')
+sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton/src')
+from inference import main_ladi
 
+
+
+# sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model')
+# print('sys.path:', sys.path)
+# from Self_Correction_Human_Parsing.simple_extractor import main_schp
+# from pytorch_openpose.extract_keypoint import main_openpose
+# from ladi_vton.src.inference import main_ladi
 app = FastAPI()
 
 orders = []
@@ -29,13 +40,10 @@ orders = []
 def hello_world():
     return {"hello": "world"}
 
-
 class Product(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
     name: str
     price: float
     result: Optional[List]
-
 
 class Order(BaseModel):
     id: UUID = Field(default_factory=uuid4)
@@ -82,6 +90,14 @@ async def get_order(order_id: UUID) -> Union[Order, dict]:
 def get_order_by_id(order_id: UUID) -> Optional[Order]:
     return next((order for order in orders if order.id == order_id), None)
 
+def convert_png_to_jpg(png_file, jpg_file):
+    # PNG 파일 열기
+    image = Image.open(png_file)
+
+    # JPG로 변환하기
+    image = image.convert("RGB")
+    image.save(jpg_file, "JPEG")
+
 # post!!
 @app.post("/order", description="주문을 요청합니다")
 async def make_order(files: List[UploadFile] = File(...),
@@ -107,14 +123,16 @@ async def make_order(files: List[UploadFile] = File(...),
     os.makedirs(f'{input_dir}/buffer', exist_ok=True)
 
     target_image.save(f'{input_dir}/target.jpg')
-    target_image.save(f'{input_dir}/buffer/target.jpg')
+    target_image.save(f'{input_dir}/buffer/target/target.jpg')
 
     garment_image.save(f'{input_dir}/garment.jpg')
-    garment_image.save(f'{input_dir}/buffer/garment.jpg')
+    garment_image.save(f'{input_dir}/buffer/garment/garment.jpg')
 
     # schp  - (1024, 784), (512, 384)
-    target_buffer_dir = f'{input_dir}/buffer'
+    target_buffer_dir = f'{input_dir}/buffer/target'
     main_schp(target_buffer_dir)
+
+
     
     # openpose 
     output_openpose_buffer_dir = '/opt/ml/user_db/openpose/buffer'
@@ -122,6 +140,11 @@ async def make_order(files: List[UploadFile] = File(...),
     main_openpose(target_buffer_dir, output_openpose_buffer_dir)
     
     # ladi-vton 
+    output_ladi_buffer_dir = '/opt/ml/user_db/ladi/buffer'
+    db_dir = '/opt/ml/user_db'
+    os.makedirs(output_ladi_buffer_dir, exist_ok=True)
+    main_ladi(db_dir, output_ladi_buffer_dir)
+
     
     inference_result = predict_from_image_byte(model=model, image_bytes=image_bytes, config=config)
     product = InferenceImageProduct(result=inference_result)

@@ -17,10 +17,14 @@ from transformers import CLIPTextModel, CLIPTokenizer, CLIPVisionModelWithProjec
 from dataset.dresscode import DressCodeDataset
 from dataset.vitonhd import VitonHDDataset
 from models.AutoencoderKL import AutoencoderKL
-from src.utils.encode_text_word_embedding import encode_text_word_embedding
-from utils.set_seeds import set_seed
-from utils.val_metrics import compute_metrics
-from vto_pipelines.tryon_pipe import StableDiffusionTryOnePipeline
+
+import sys
+sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton/src/utils')
+sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton/src/vto_pipelines')
+from encode_text_word_embedding import encode_text_word_embedding ###수정
+from set_seeds import set_seed
+from val_metrics import compute_metrics
+from tryon_pipe import StableDiffusionTryOnePipeline
 
 PROJECT_ROOT = Path(__file__).absolute().parents[1].absolute()
 
@@ -41,7 +45,8 @@ def parse_args():
     parser.add_argument(
         "--output_dir",
         type=str,
-        required=True,
+        default="/",
+        #required=True, ##수정
         help="Path to the output directory",
     )
 
@@ -71,9 +76,11 @@ def parse_args():
                         help="The name of the repository to keep in sync with the local `output_dir`.")
 
     parser.add_argument("--num_vstar", default=16, type=int, help="Number of predicted v* images to use")
-    parser.add_argument("--test_order", type=str, required=True, choices=["unpaired", "paired"])
-    parser.add_argument("--dataset", type=str, required=True, choices=["dresscode", "vitonhd"], help="dataset to use")
-    parser.add_argument("--category", type=str, choices=['all', 'lower_body', 'upper_body', 'dresses'], default='all')
+    ###수정
+    parser.add_argument("--test_order", type=str, default="unpaired", choices=["unpaired", "paired"]) #required=True, 
+    ###수정
+    parser.add_argument("--dataset", type=str, default="dresscode", choices=["dresscode", "vitonhd"], help="dataset to use") #required=True,
+    parser.add_argument("--category", type=str, choices=['all', 'lower_body', 'upper_body', 'dresses'], default='lower_body') ###
     parser.add_argument("--use_png", default=False, action="store_true")
     parser.add_argument("--num_inference_steps", default=50, type=int)
     parser.add_argument("--guidance_scale", default=7.5, type=float)
@@ -88,8 +95,10 @@ def parse_args():
 
 
 @torch.inference_mode()
-def main():
+def main_ladi(db_dir, output_buffer_dir):
     args = parse_args()
+    args.dresscode_dataroot = db_dir
+    args.output_dir = output_buffer_dir
 
     # Check if the dataset dataroot is provided
     if args.dataset == "vitonhd" and args.vitonhd_dataroot is None:
@@ -230,6 +239,11 @@ def main():
                                                                 torchvision.transforms.InterpolationMode.BILINEAR,
                                                                 antialias=True)
         agnostic = torch.cat([low_im_mask, low_pose_map], 1)
+        
+        print('low_im_mask:', low_im_mask.shape)
+        print('low_pose_map:', low_pose_map.shape)
+        print('low_cloth:', low_cloth.shape)
+        print('agnostic:', agnostic.shape)
         low_grid, theta, rx, ry, cx, cy, rg, cg = tps(low_cloth, agnostic)
 
         # We upsample the grid to the original image size and warp the cloth using the predicted TPS parameters
@@ -321,5 +335,5 @@ def main():
             json.dump(metrics, f, indent=4)
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
