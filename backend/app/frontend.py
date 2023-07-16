@@ -49,9 +49,13 @@ def main():
         ]
         response = requests.post("http://localhost:8001/order", files=files)
         
-        label = response.json()["products"][0]["result"]
-        st.write(f'label is {label}')
-
+        # label = response.json()["products"][0]["result"]
+        # st.write(f'label is {label}')
+        category = 'lower_body'
+        output_ladi_buffer_dir = '/opt/ml/user_db/ladi/buffer'
+        final_result_dir = output_ladi_buffer_dir
+        final_img = Image.open(os.path.join(final_result_dir, f'{category}.png'))
+        st.image(final_img, caption='Final Image', use_column_width=True)
 
 @cache_on_button_press('Authenticate')
 def authenticate(password) -> bool:

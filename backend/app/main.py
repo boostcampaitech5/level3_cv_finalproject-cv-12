@@ -40,10 +40,13 @@ orders = []
 def hello_world():
     return {"hello": "world"}
 
+
 class Product(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
     name: str
     price: float
     result: Optional[List]
+
 
 class Order(BaseModel):
     id: UUID = Field(default_factory=uuid4)
@@ -90,13 +93,6 @@ async def get_order(order_id: UUID) -> Union[Order, dict]:
 def get_order_by_id(order_id: UUID) -> Optional[Order]:
     return next((order for order in orders if order.id == order_id), None)
 
-def convert_png_to_jpg(png_file, jpg_file):
-    # PNG 파일 열기
-    image = Image.open(png_file)
-
-    # JPG로 변환하기
-    image = image.convert("RGB")
-    image.save(jpg_file, "JPEG")
 
 # post!!
 @app.post("/order", description="주문을 요청합니다")
@@ -132,7 +128,6 @@ async def make_order(files: List[UploadFile] = File(...),
     target_buffer_dir = f'{input_dir}/buffer/target'
     main_schp(target_buffer_dir)
 
-
     
     # openpose 
     output_openpose_buffer_dir = '/opt/ml/user_db/openpose/buffer'
@@ -144,12 +139,14 @@ async def make_order(files: List[UploadFile] = File(...),
     db_dir = '/opt/ml/user_db'
     os.makedirs(output_ladi_buffer_dir, exist_ok=True)
     main_ladi(db_dir, output_ladi_buffer_dir)
-
     
+    return None
+    ## return값 
+    ## output dir
+
     inference_result = predict_from_image_byte(model=model, image_bytes=image_bytes, config=config)
     product = InferenceImageProduct(result=inference_result)
     products.append(product)
-
 
     new_order = Order(products=products)
     orders.append(new_order)
