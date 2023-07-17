@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.param_functions import Depends
 from pydantic import BaseModel, Field
 from uuid import UUID, uuid4
@@ -96,33 +96,42 @@ def get_order_by_id(order_id: UUID) -> Optional[Order]:
 
 # post!!
 @app.post("/order", description="주문을 요청합니다")
-async def make_order(files: List[UploadFile] = File(...),
-#  def make_order(files: List[UploadFile] = File(...),
+async def make_order(
+                     files: List[UploadFile] = File(...),
                      model: MyEfficientNet = Depends(get_model),
                      config: Dict[str, Any] = Depends(get_config)):
     products = []
 
-    # target:files[0], garment:files[1]
+    # category : files[0], target:files[1], garment:files[2]
 
-    target_bytes = await files[0].read()
-    garment_bytes = await files[1].read()
-    
-    # TODO image byte 
-    target_image = Image.open(io.BytesIO(target_bytes))
-    target_image = target_image.convert("RGB")
+    byte_string = await files[0].read()
+    string_io = io.BytesIO(byte_string)
+    category = string_io.read().decode('utf-8')
 
-    garment_image = Image.open(io.BytesIO(garment_bytes))
-    garment_image = garment_image.convert("RGB")
+    if category == 'upper_lower': 
+        pass
 
-    input_dir = '/opt/ml/user_db/input/'
+    else : 
+        target_bytes = await files[1].read()
+        garment_bytes = await files[2].read()
 
-    os.makedirs(f'{input_dir}/buffer', exist_ok=True)
+        
+        # TODO image byte 
+        target_image = Image.open(io.BytesIO(target_bytes))
+        target_image = target_image.convert("RGB")
 
-    target_image.save(f'{input_dir}/target.jpg')
-    target_image.save(f'{input_dir}/buffer/target/target.jpg')
+        garment_image = Image.open(io.BytesIO(garment_bytes))
+        garment_image = garment_image.convert("RGB")
 
-    garment_image.save(f'{input_dir}/garment.jpg')
-    garment_image.save(f'{input_dir}/buffer/garment/garment.jpg')
+        input_dir = '/opt/ml/user_db/input/'
+
+        os.makedirs(f'{input_dir}/buffer', exist_ok=True)
+
+        target_image.save(f'{input_dir}/target.jpg')
+        target_image.save(f'{input_dir}/buffer/target/target.jpg')
+
+        garment_image.save(f'{input_dir}/garment.jpg')
+        garment_image.save(f'{input_dir}/buffer/garment/garment.jpg')
 
     # schp  - (1024, 784), (512, 384)
     target_buffer_dir = f'{input_dir}/buffer/target'
@@ -138,7 +147,7 @@ async def make_order(files: List[UploadFile] = File(...),
     output_ladi_buffer_dir = '/opt/ml/user_db/ladi/buffer'
     db_dir = '/opt/ml/user_db'
     os.makedirs(output_ladi_buffer_dir, exist_ok=True)
-    main_ladi(db_dir, output_ladi_buffer_dir)
+    main_ladi(category, db_dir, output_ladi_buffer_dir)
     
     return None
     ## return값 
