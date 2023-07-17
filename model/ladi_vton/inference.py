@@ -241,10 +241,6 @@ def main_ladi(db_dir, output_buffer_dir):
                                                                 antialias=True)
         agnostic = torch.cat([low_im_mask, low_pose_map], 1)
         
-        print('low_im_mask:', low_im_mask.shape)
-        print('low_pose_map:', low_pose_map.shape)
-        print('low_cloth:', low_cloth.shape)
-        print('agnostic:', agnostic.shape)
         low_grid, theta, rx, ry, cx, cy, rg, cg = tps(low_cloth, agnostic)
 
         # We upsample the grid to the original image size and warp the cloth using the predicted TPS parameters

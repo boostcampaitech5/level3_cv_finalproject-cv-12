@@ -178,7 +178,6 @@ class DressCodeDataset(data.Dataset):
             im_parse = Image.open(os.path.join(dataroot, 'schp/buffer', parse_name))
             im_parse = im_parse.resize((self.width, self.height), Image.NEAREST)
             parse_array = np.array(im_parse)
-            print('parse_array', parse_array.shape)
 
 
             parse_shape = (parse_array > 0).astype(np.float32)
@@ -199,7 +198,6 @@ class DressCodeDataset(data.Dataset):
             parser_mask_changeable = (parse_array == label_map["background"]).astype(np.float32)
 
             arms = (parse_array == 14).astype(np.float32) + (parse_array == 15).astype(np.float32)
-            print('category', category)
             if category == 'dresses':
                 label_cat = 7
                 parse_cloth = (parse_array == 7).astype(np.float32)
@@ -331,8 +329,6 @@ class DressCodeDataset(data.Dataset):
                         arms_draw.line(np.concatenate(
                             (wrist_left, elbow_left, shoulder_left, shoulder_right, elbow_right, wrist_right)).astype(
                             np.uint16).tolist(), 'white', 45, 'curve')
-                print('im_arms', np.logical_not(im_arms).shape)
-                print('arms', arms.shape)
                 hands = np.logical_and(np.logical_not(im_arms), arms)
 
                 if category == 'dresses' or category == 'upper_body':
