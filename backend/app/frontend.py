@@ -114,9 +114,11 @@ def main():
                 empty_slot = st.empty()
                 empty_slot.markdown("<h2 style='text-align: center;'>\nLoading...</h2>", unsafe_allow_html=True)
 
+                import time
+                t = time.time()
                 response = requests.post("http://localhost:8001/order", files=files)
                 response.raise_for_status() ## 200이 아니면 예외처리
-
+                print('total processing time: ', time.time() - t)
                 
                 empty_slot.empty()
                 empty_slot.markdown("<h2 style='text-align: center;'>Here it is !</h2>", unsafe_allow_html=True)
