@@ -138,10 +138,24 @@ class DressCodeDataset(data.Dataset):
 
         #####here
         if "image" in self.outputlist or "im_head" in self.outputlist or "im_cloth" in self.outputlist:
-            # Person image
-            image = Image.open(os.path.join(dataroot,  'input/buffer/target',  im_name))
+            # Person image        
+            image = Image.open(os.path.join(dataroot, 'images', im_name))
+    
+            parse_name = im_name.replace('_0.jpg', '_4.png')
+            im_parse = Image.open(os.path.join(dataroot, 'label_maps', parse_name))
+            im_parse = im_parse.resize((self.width, self.height), Image.NEAREST)
+            parse_array = np.array(im_parse)
+        
+            parser_mask_changeable = (parse_array == label_map["background"]).astype(np.float32)
+            
+            # parser_mask_changeable이 1인 부분의 인덱스를 가져옴 (background 부분의 index)
+            indices = np.where(parser_mask_changeable == 1)
+            
             image = image.resize((self.width, self.height))
             image = self.transform(image)  # [-1,1]
+            
+            # 3개의 채널 모두 해당 인덱스의 값을 1로 변경 (흰색)
+            image[:, indices[0], indices[1]] = 1
 
         if "warped_cloth" in self.outputlist:  # Precomputed warped clothing image
             if self.order == 'unpaired':
