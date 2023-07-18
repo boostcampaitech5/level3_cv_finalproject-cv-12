@@ -139,10 +139,10 @@ class DressCodeDataset(data.Dataset):
         #####here
         if "image" in self.outputlist or "im_head" in self.outputlist or "im_cloth" in self.outputlist:
             # Person image        
-            image = Image.open(os.path.join(dataroot, 'images', im_name))
+            image = Image.open(os.path.join(dataroot, 'input/buffer/target', im_name))
     
-            parse_name = im_name.replace('_0.jpg', '_4.png')
-            im_parse = Image.open(os.path.join(dataroot, 'label_maps', parse_name))
+            parse_name = im_name.replace('.jpg', '.png')
+            im_parse = Image.open(os.path.join(dataroot, 'schp/buffer', parse_name))
             im_parse = im_parse.resize((self.width, self.height), Image.NEAREST)
             parse_array = np.array(im_parse)
         
