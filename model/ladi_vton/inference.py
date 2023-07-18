@@ -56,7 +56,7 @@ def parse_args():
     parser.add_argument(
         "--mixed_precision",
         type=str,
-        default=None,
+        default="fp16",
         choices=["no", "fp16", "bf16"],
         help=(
             "Whether to use mixed precision. Choose between fp16 and bf16 (bfloat16). Bf16 requires PyTorch >="
@@ -95,10 +95,11 @@ def parse_args():
 
 
 @torch.inference_mode()
-def main_ladi(db_dir, output_buffer_dir):
+def main_ladi(category_, db_dir, output_buffer_dir):
     args = parse_args()
     args.dresscode_dataroot = db_dir
     args.output_dir = output_buffer_dir
+    args.category = category_
 
     # Check if the dataset dataroot is provided
     if args.dataset == "vitonhd" and args.vitonhd_dataroot is None:

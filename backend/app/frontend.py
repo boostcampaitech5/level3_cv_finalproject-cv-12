@@ -15,15 +15,18 @@ st.set_page_config(layout="wide")
 
 root_password = 'a'
 
+category_pair = {'Upper':'upper_body', 'Lower':'lower_body', 'Upper & Lower':'upper_lower', 'Dress':'dresses'}
 
 def main():
     st.title("Welcome to VTON World :)")
-    
+    is_all_uploaded = False
     with st.container():
         col1, col2, col3 = st.columns([1,1,1])
         
         with col1:
             st.header("Human")
+            
+            # target_img = Image.open('/opt/ml/user_db/input/buffer/target/target.jpg')
             uploaded_target = st.file_uploader("Choose an target image", type=["jpg", "jpeg", "png"])
             
             if uploaded_target:
@@ -34,26 +37,77 @@ def main():
         
         with col2:
             st.header("Cloth")
-            uploaded_garment = st.file_uploader("Choose an garment image", type=["jpg", "jpeg", "png"])
 
-            if uploaded_garment:
-                # st.spinner("dehazing now...")
-                
-                garment_bytes = uploaded_garment.getvalue()
-                garment_img = Image.open(io.BytesIO(garment_bytes))
+            category_list = ['Upper', 'Lower', 'Upper & Lower', 'Dress']
+            selected_category = st.selectbox('Choose an category of garment', category_list)
+            # uploaded_garment = Image.open('/opt/ml/user_db/input/buffer/garment/garment.jpg')
+            
+            category = category_pair[selected_category]
+            print('**category:', category)
 
-                st.image(garment_img, caption='Uploaded garment Image')
+            if selected_category == 'Upper & Lower':
+                uploaded_garment1 = st.file_uploader("Choose an upper image", type=["jpg", "jpeg", "png"])
+                uploaded_garment2 = st.file_uploader("Choose an lower image", type=["jpg", "jpeg", "png"])
                 
+                col2_1, col2_2, = st.columns([1,1])
+                with col2_1:
+                    if uploaded_garment1:
+                        garment_bytes1 = uploaded_garment1.getvalue()
+                        garment_img1 = Image.open(io.BytesIO(garment_bytes1))
+                        st.image(garment_img1, caption='Uploaded upper Image')
+                
+                with col2_2:
+                    if uploaded_garment2:
+                        garment_bytes2 = uploaded_garment2.getvalue()
+                        garment_img2 = Image.open(io.BytesIO(garment_bytes2))
+                        st.image(garment_img2, caption='Uploaded lower Image')
+
+                if uploaded_target and uploaded_garment1 and uploaded_garment2:
+                    is_all_uploaded = True
+                    files = [
+                        ('files', category),
+                        ('files', (uploaded_target.name, target_bytes,
+                                uploaded_target.type)),
+                        ('files', (uploaded_garment1.name, garment_bytes1,
+                                uploaded_garment1.type)),
+                        ('files', (uploaded_garment2.name, garment_bytes2,
+                                uploaded_garment2.type))
+                    ]
+
+
+            else : 
+                uploaded_garment = st.file_uploader("Choose an garment image", type=["jpg", "jpeg", "png"])
+
+                if uploaded_garment:
+                    garment_bytes = uploaded_garment.getvalue()
+                    garment_img = Image.open(io.BytesIO(garment_bytes))
+                    st.image(garment_img, caption='Uploaded garment Image')
+
+                if uploaded_target and uploaded_garment :
+                    is_all_uploaded = True
+                    files = [
+                        ('files', category),
+                        ('files', (uploaded_target.name, target_bytes,
+                                uploaded_target.type)),
+                        ('files', (uploaded_garment.name, garment_bytes,
+                                uploaded_garment.type)),
+                    ]
+
         with col3:  
             st.header("Result")
-        if uploaded_target and uploaded_garment:
-            files = [
-                ('files', (uploaded_target.name, target_bytes,
-                        uploaded_target.type))
-                ,
-                ('files', (uploaded_garment.name, garment_bytes,
-                        uploaded_garment.type))
-            ]
+
+        if is_all_uploaded:
+            
+            # category = category_pair[selected_category]
+            # print('**category:', category)
+            # files = [
+            #     ('files', (uploaded_target.name, target_bytes,
+            #             uploaded_target.type))
+            #     ,
+            #     ('files', (uploaded_garment.name, garment_bytes,
+            #             uploaded_garment.type)),
+            #     category
+            # ]
             
             with col3:  
                 st.write(' ')
@@ -61,10 +115,13 @@ def main():
                 empty_slot.markdown("<h2 style='text-align: center;'>\nLoading...</h2>", unsafe_allow_html=True)
 
                 response = requests.post("http://localhost:8001/order", files=files)
+                response.raise_for_status() ## 200이 아니면 예외처리
+
+                
                 empty_slot.empty()
                 empty_slot.markdown("<h2 style='text-align: center;'>Here it is !</h2>", unsafe_allow_html=True)
 
-                category = 'lower_body'
+
                 output_ladi_buffer_dir = '/opt/ml/user_db/ladi/buffer'
                 final_result_dir = output_ladi_buffer_dir
                 final_img = Image.open(os.path.join(final_result_dir, f'{category}.png'))

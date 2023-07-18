@@ -338,7 +338,7 @@ class DressCodeDataset(data.Dataset):
             # delete neck
             parse_head_2 = torch.clone(parse_head)
             if category == 'dresses' or category == 'upper_body':
-                with open(os.path.join(dataroot, 'keypoints', pose_name), 'r') as f:
+                with open(os.path.join(dataroot, 'openpose/buffer', pose_name), 'r') as f:
                     data = json.load(f)
                     points = []
                     points.append(np.multiply(tuple(data['keypoints'][2][:2]), self.height / 512.0))
