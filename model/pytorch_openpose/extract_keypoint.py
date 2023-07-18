@@ -33,7 +33,6 @@ def main_openpose(target_buffer_dir, output_buffer_dir):
 
     # body_estimation foreward
     candidate, subset = body_estimation(oriImg)
-    print('candidate len : ',len(candidate))
 
     while True:
         if len(candidate) == 18:
@@ -45,7 +44,6 @@ def main_openpose(target_buffer_dir, output_buffer_dir):
             candidate.append(np.array([-1.0, -1.0, 0.0, -1.0]))
             candidate = np.array(candidate)
 
-    print('candidate len : ',len(candidate))
     json_dict = {
         'keypoints' : candidate.tolist()
     }
