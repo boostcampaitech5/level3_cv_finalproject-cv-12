@@ -22,9 +22,14 @@ from extract_keypoint import main_openpose
 # ladi
 sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton')
 sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton/src')
+sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton/src/utils')
+
 from inference import main_ladi
 
+from face_cut_and_paste import main_cut_and_paste
 
+# print('됐냐')
+# exit()
 
 # sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model')
 # print('sys.path:', sys.path)
@@ -148,7 +153,7 @@ async def make_order(
     db_dir = '/opt/ml/user_db'
     os.makedirs(output_ladi_buffer_dir, exist_ok=True)
     main_ladi(category, db_dir, output_ladi_buffer_dir)
-    
+    main_cut_and_paste(category, db_dir)
     return None
     ## return값 
     ## output dir
