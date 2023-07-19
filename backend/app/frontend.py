@@ -17,6 +17,18 @@ root_password = 'a'
 
 category_pair = {'Upper':'upper_body', 'Lower':'lower_body', 'Upper & Lower':'upper_lower', 'Dress':'dresses'}
 
+def check_modelLoading():
+    api_url = "http://localhost:8001/get_boolean"
+    is_modelLoading = True
+    try:
+        response = requests.get(api_url)
+        if response.status_code == 200:
+            data = response.json()
+            is_modelLoading = data["is_modelLoading"]
+    except requests.exceptions.RequestException as e:
+        pass
+    return is_modelLoading
+
 def main():
     st.title("Welcome to VTON World :)")
     is_all_uploaded = False
@@ -96,23 +108,16 @@ def main():
         with col3:  
             st.header("Result")
 
+
         if is_all_uploaded:
-            
-            # category = category_pair[selected_category]
-            # print('**category:', category)
-            # files = [
-            #     ('files', (uploaded_target.name, target_bytes,
-            #             uploaded_target.type))
-            #     ,
-            #     ('files', (uploaded_garment.name, garment_bytes,
-            #             uploaded_garment.type)),
-            #     category
-            # ]
             
             with col3:  
                 st.write(' ')
                 empty_slot = st.empty()
                 empty_slot.markdown("<h2 style='text-align: center;'>\nLoading...</h2>", unsafe_allow_html=True)
+                
+                while check_modelLoading() :
+                    pass
 
                 import time
                 t = time.time()
@@ -144,16 +149,5 @@ def main():
                 #     mime='image/jpg',
                 #     on_click=save_btn_click(option, dehaze_image_bytes)
                 # )
-
-# @cache_on_button_press('Authenticate')
-# def authenticate(password) -> bool:
-#     return password == root_password
-# password = st.text_input('password', type="password")
-# if authenticate(password):
-#     st.success('You are authenticated!')
-#     main()
-# else:
-#     st.error('The password is invalid.')
-
 
 main()
