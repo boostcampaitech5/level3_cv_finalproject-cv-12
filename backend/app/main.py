@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File
 from fastapi.param_functions import Depends
 from pydantic import BaseModel, Field
 from uuid import UUID, uuid4
@@ -25,33 +25,79 @@ sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton/src')
 sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton/src/utils')
 
 from inference import main_ladi
-
 from face_cut_and_paste import main_cut_and_paste
 
-# print('됐냐')
-# exit()
+import torch
+from accelerate import Accelerator
+from diffusers import DDIMScheduler
+from diffusers.utils import check_min_version
+from diffusers.utils.import_utils import is_xformers_available
+from tqdm import tqdm
+from transformers import CLIPTextModel, CLIPTokenizer, CLIPVisionModelWithProjection, AutoProcessor
+from models.AutoencoderKL import AutoencoderKL
 
-# sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model')
-# print('sys.path:', sys.path)
-# from Self_Correction_Human_Parsing.simple_extractor import main_schp
-# from pytorch_openpose.extract_keypoint import main_openpose
-# from ladi_vton.src.inference import main_ladi
 app = FastAPI()
+ladi_models = None
 
-orders = []
+def load_ladiModels():
+    pretrained_model_name_or_path = "stabilityai/stable-diffusion-2-inpainting"
 
+    # Setup accelerator and device.
+    mixed_precision = "fp16"
+    accelerator = Accelerator(mixed_precision=mixed_precision)
+    device = accelerator.device
+    # Load scheduler, tokenizer and models.
+    val_scheduler = DDIMScheduler.from_pretrained(pretrained_model_name_or_path, subfolder="scheduler")
+    val_scheduler.set_timesteps(50, device=device)
+    text_encoder = CLIPTextModel.from_pretrained(pretrained_model_name_or_path, subfolder="text_encoder")
+    vae = AutoencoderKL.from_pretrained(pretrained_model_name_or_path, subfolder="vae")
+    vision_encoder = CLIPVisionModelWithProjection.from_pretrained("laion/CLIP-ViT-H-14-laion2B-s32B-b79K")
+    processor = AutoProcessor.from_pretrained("laion/CLIP-ViT-H-14-laion2B-s32B-b79K")
+    tokenizer = CLIPTokenizer.from_pretrained(pretrained_model_name_or_path, subfolder="tokenizer")
+
+    # Load the trained models from the hub
+    unet = torch.hub.load(repo_or_dir='miccunifi/ladi-vton', source='github', model='extended_unet', dataset="dresscode")
+    emasc = torch.hub.load(repo_or_dir='miccunifi/ladi-vton', source='github', model='emasc', dataset="dresscode")
+    inversion_adapter = torch.hub.load(repo_or_dir='miccunifi/ladi-vton', source='github', model='inversion_adapter', dataset="dresscode")
+    tps, refinement = torch.hub.load(repo_or_dir='miccunifi/ladi-vton', source='github', model='warping_module', dataset="dresscode")
+
+    # Cast to weight_dtype
+    weight_dtype = torch.float32
+    if mixed_precision == 'fp16':
+        weight_dtype = torch.float16
+
+    text_encoder.to(device, dtype=weight_dtype)
+    vae.to(device, dtype=weight_dtype)
+    emasc.to(device, dtype=weight_dtype)
+    inversion_adapter.to(device, dtype=weight_dtype)
+    unet.to(device, dtype=weight_dtype)
+    tps.to(device, dtype=weight_dtype)
+    refinement.to(device, dtype=weight_dtype)
+    vision_encoder.to(device, dtype=weight_dtype)
+
+    global ladi_models
+    ladi_models = (val_scheduler, text_encoder,vae , vision_encoder ,processor ,tokenizer ,unet ,emasc ,inversion_adapter, tps ,refinement)
+
+    return None 
+
+is_modelLoading = True
+load_ladiModels()
+is_modelLoading = False
+
+@app.get("/get_boolean")
+async def get_boolean():
+    global is_modelLoading
+    return {"is_modelLoading": is_modelLoading}
 
 @app.get("/")
 def hello_world():
     return {"hello": "world"}
-
 
 class Product(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     name: str
     price: float
     result: Optional[List]
-
 
 class Order(BaseModel):
     id: UUID = Field(default_factory=uuid4)
@@ -71,21 +117,17 @@ class Order(BaseModel):
         self.updated_at = datetime.now()
         return self
 
-
 class OrderUpdate(BaseModel):
     products: List[Product] = Field(default_factory=list)
-
 
 class InferenceImageProduct(Product):
     name: str = "inference_image_product"
     price: float = 100.0
     result: Optional[List]
 
-
 @app.get("/order", description="주문 리스트를 가져옵니다")
 async def get_orders() -> List[Order]:
     return orders
-
 
 @app.get("/order/{order_id}", description="Order 정보를 가져옵니다")
 async def get_order(order_id: UUID) -> Union[Order, dict]:
@@ -98,17 +140,15 @@ async def get_order(order_id: UUID) -> Union[Order, dict]:
 def get_order_by_id(order_id: UUID) -> Optional[Order]:
     return next((order for order in orders if order.id == order_id), None)
 
-
 # post!!
 @app.post("/order", description="주문을 요청합니다")
 async def make_order(
                      files: List[UploadFile] = File(...),
                      model: MyEfficientNet = Depends(get_model),
                      config: Dict[str, Any] = Depends(get_config)):
-    products = []
+
 
     # category : files[0], target:files[1], garment:files[2]
-
     byte_string = await files[0].read()
     string_io = io.BytesIO(byte_string)
     category = string_io.read().decode('utf-8')
@@ -152,8 +192,10 @@ async def make_order(
     output_ladi_buffer_dir = '/opt/ml/user_db/ladi/buffer'
     db_dir = '/opt/ml/user_db'
     os.makedirs(output_ladi_buffer_dir, exist_ok=True)
-    main_ladi(category, db_dir, output_ladi_buffer_dir)
+    
+    main_ladi(category, db_dir, output_ladi_buffer_dir, ladi_models)
     main_cut_and_paste(category, db_dir)
+    
     return None
     ## return값 
     ## output dir
