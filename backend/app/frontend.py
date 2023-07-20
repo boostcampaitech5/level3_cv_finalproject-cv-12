@@ -128,10 +128,12 @@ def main():
                 empty_slot.empty()
                 empty_slot.markdown("<h2 style='text-align: center;'>Here it is !</h2>", unsafe_allow_html=True)
 
-
                 output_ladi_buffer_dir = '/opt/ml/user_db/ladi/buffer'
                 final_result_dir = output_ladi_buffer_dir
-                final_img = Image.open(os.path.join(final_result_dir, f'{category}.png'))
+                if category =='upper_lower':
+                    final_img = Image.open(os.path.join(final_result_dir, 'lower_body.png'))
+                else : 
+                    final_img = Image.open(os.path.join(final_result_dir, f'{category}.png'))
                 
                 st.write(' ')
                 st.write(' ')

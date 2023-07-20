@@ -97,7 +97,7 @@ def parse_args():
 
 
 @torch.inference_mode()
-def main_ladi(category_, db_dir, output_buffer_dir, ladi_models):
+def main_ladi(category_, db_dir, output_buffer_dir, ladi_models, target_name='target.jpg'):
     args = parse_args()
     args.dresscode_dataroot = db_dir
     args.output_dir = output_buffer_dir
@@ -152,7 +152,8 @@ def main_ladi(category_, db_dir, output_buffer_dir, ladi_models):
             radius=5,
             outputlist=outputlist,
             category=category,
-            size=(512, 384)
+            size=(512, 384),
+            target_name=target_name
         )
     elif args.dataset == "vitonhd":
         test_dataset = VitonHDDataset(

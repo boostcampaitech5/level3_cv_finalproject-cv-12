@@ -37,6 +37,7 @@ class DressCodeDataset(data.Dataset):
                                            'captions', 'category', 'warped_cloth', 'clip_cloth_features'),
                  category: Tuple[str] = ('dresses', 'upper_body', 'lower_body'),
                  size: Tuple[int, int] = (512, 384),
+                 target_name: str = 'target.jpg'
                  ):
 
         super().__init__()
@@ -47,6 +48,7 @@ class DressCodeDataset(data.Dataset):
         self.height = size[0]
         self.width = size[1]
         self.radius = radius
+        self.target_name = target_name
         self.transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
@@ -107,10 +109,12 @@ class DressCodeDataset(data.Dataset):
                 self.clip_cloth_features_names = pickle.load(f)
 
     def __getitem__(self, index):
-        c_name = self.c_names[index]
         im_name = self.im_names[index]
         dataroot = self.dataroot_names[index]
         category = self.category[0] #dataroot.split('/')[-1] ## 수정
+        c_name = f'{category}.jpg'
+        im_name = self.target_name
+        
 
         if "captions" in self.outputlist:  # Captions
             captions = self.captions_dict[c_name.split('_')[0]]
@@ -142,7 +146,7 @@ class DressCodeDataset(data.Dataset):
             image = Image.open(os.path.join(dataroot, 'input/buffer/target', im_name))
     
             parse_name = im_name.replace('.jpg', '.png')
-            im_parse = Image.open(os.path.join(dataroot, 'schp/buffer', parse_name))
+            im_parse = Image.open(os.path.join(dataroot, 'schp/buffer', 'target.png'))
             im_parse = im_parse.resize((self.width, self.height), Image.NEAREST)
             parse_array = np.array(im_parse)
         
@@ -189,7 +193,7 @@ class DressCodeDataset(data.Dataset):
             # Label Map
             # parse_name = im_name.replace('_0.jpg', '_4.png')
             parse_name = im_name.replace('.jpg', '.png')
-            im_parse = Image.open(os.path.join(dataroot, 'schp/buffer', parse_name))
+            im_parse = Image.open(os.path.join(dataroot, 'schp/buffer', 'target.png'))
             im_parse = im_parse.resize((self.width, self.height), Image.NEAREST)
             parse_array = np.array(im_parse)
 
@@ -266,7 +270,7 @@ class DressCodeDataset(data.Dataset):
 
             # Load pose points
             pose_name = im_name.replace('.jpg', '.json')
-            with open(os.path.join(dataroot, 'openpose/buffer', pose_name), 'r') as f:
+            with open(os.path.join(dataroot, 'openpose/buffer', 'target.json'), 'r') as f:
                 pose_label = json.load(f)
                 pose_data = pose_label['keypoints']
                 pose_data = np.array(pose_data)
@@ -313,7 +317,7 @@ class DressCodeDataset(data.Dataset):
             arms_draw = ImageDraw.Draw(im_arms)
 
             if category == 'dresses' or category == 'upper_body' or category == 'lower_body':
-                with open(os.path.join(dataroot, 'openpose/buffer', pose_name), 'r') as f:
+                with open(os.path.join(dataroot, 'openpose/buffer', 'target.json'), 'r') as f:
                     data = json.load(f)
                     shoulder_right = np.multiply(tuple(data['keypoints'][2][:2]), self.height / 512.0)
                     shoulder_left = np.multiply(tuple(data['keypoints'][5][:2]), self.height / 512.0)
@@ -352,7 +356,7 @@ class DressCodeDataset(data.Dataset):
             # delete neck
             parse_head_2 = torch.clone(parse_head)
             if category == 'dresses' or category == 'upper_body':
-                with open(os.path.join(dataroot, 'openpose/buffer', pose_name), 'r') as f:
+                with open(os.path.join(dataroot, 'openpose/buffer', 'target.json'), 'r') as f:
                     data = json.load(f)
                     points = []
                     points.append(np.multiply(tuple(data['keypoints'][2][:2]), self.height / 512.0))
