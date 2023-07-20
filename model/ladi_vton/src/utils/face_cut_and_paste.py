@@ -83,13 +83,6 @@ def main_cut_and_paste(category, db_dir):
         parser_mask_changeable = (parse_array == label_map["dress"]).astype(np.float32)
         indices = np.where(parser_mask_changeable == 0)
 
-
-        
-        
-    print('origin_np: ', origin_np.shape)
-    print('parse_array: ', parse_array.shape)
-    print('generatived_np: ', generatived_np.shape)
-
     def overlay_arrays(origin_np, generatived_np, indices):
         # indices에서 위치 정보를 추출합니다.
         overlay_indices = (indices[0], indices[1])
