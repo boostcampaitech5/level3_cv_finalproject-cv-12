@@ -3,9 +3,7 @@ from fastapi.param_functions import Depends
 from pydantic import BaseModel, Field
 from uuid import UUID, uuid4
 from typing import List, Union, Optional, Dict, Any
-
 from datetime import datetime
-
 from app.model import MyEfficientNet, get_model, get_config, predict_from_image_byte
 from PIL import Image
 import io
@@ -35,6 +33,9 @@ from diffusers.utils.import_utils import is_xformers_available
 from tqdm import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer, CLIPVisionModelWithProjection, AutoProcessor
 from models.AutoencoderKL import AutoencoderKL
+
+import shutil
+
 
 app = FastAPI()
 ladi_models = None
@@ -136,9 +137,37 @@ async def get_order(order_id: UUID) -> Union[Order, dict]:
         return {"message": "주문 정보를 찾을 수 없습니다"}
     return order
 
-
 def get_order_by_id(order_id: UUID) -> Optional[Order]:
     return next((order for order in orders if order.id == order_id), None)
+
+def inference_allModels(category, db_dir):
+    
+    input_dir = os.path.join(db_dir, 'input')
+    # schp  - (1024, 784), (512, 384)
+    target_buffer_dir = os.path.join(input_dir, 'buffer/target')
+    main_schp(target_buffer_dir)
+    
+    # openpose 
+    output_openpose_buffer_dir = os.path.join(db_dir, 'openpose/buffer')
+    os.makedirs(output_openpose_buffer_dir, exist_ok=True)
+    main_openpose(target_buffer_dir, output_openpose_buffer_dir)
+    
+    # ladi-vton 
+    output_ladi_buffer_dir = os.path.join(db_dir, 'ladi/buffer')
+    os.makedirs(output_ladi_buffer_dir, exist_ok=True)
+    
+    main_ladi(category, db_dir, output_ladi_buffer_dir, ladi_models)
+    main_cut_and_paste(category, db_dir)
+
+def inference_ladi(category, db_dir, target_name='target.jpg'):
+    
+    # ladi-vton 
+    output_ladi_buffer_dir = os.path.join(db_dir, 'ladi/buffer')
+    os.makedirs(output_ladi_buffer_dir, exist_ok=True)
+    
+    main_ladi(category, db_dir, output_ladi_buffer_dir, ladi_models, target_name)
+    main_cut_and_paste(category, db_dir, target_name)
+
 
 # post!!
 @app.post("/order", description="주문을 요청합니다")
@@ -147,55 +176,56 @@ async def make_order(
                      model: MyEfficientNet = Depends(get_model),
                      config: Dict[str, Any] = Depends(get_config)):
 
+    db_dir = '/opt/ml/user_db'
+    input_dir = '/opt/ml/user_db/input/'
 
     # category : files[0], target:files[1], garment:files[2]
     byte_string = await files[0].read()
     string_io = io.BytesIO(byte_string)
     category = string_io.read().decode('utf-8')
 
+    ## category가 upper & lower일 경우
+    target_bytes = await files[1].read()
+
+    target_image = Image.open(io.BytesIO(target_bytes))
+    target_image = target_image.convert("RGB")
+
+    os.makedirs(f'{input_dir}/buffer', exist_ok=True)
+
+    target_image.save(f'{input_dir}/target.jpg')
+    target_image.save(f'{input_dir}/buffer/target/target.jpg')
+
     if category == 'upper_lower': 
-        pass
+        garment_upper_bytes = await files[2].read()
+        garment_lower_bytes = await files[3].read()
+        
+        garment_upper_image = Image.open(io.BytesIO(garment_upper_bytes))
+        garment_upper_image = garment_upper_image.convert("RGB")
+        garment_lower_image = Image.open(io.BytesIO(garment_lower_bytes))
+        garment_lower_image = garment_lower_image.convert("RGB")
+
+
+        garment_upper_image.save(f'{input_dir}/upper_body.jpg')
+        garment_upper_image.save(f'{input_dir}/buffer/garment/upper_body.jpg')
+        garment_lower_image.save(f'{input_dir}/lower_body.jpg')
+        garment_lower_image.save(f'{input_dir}/buffer/garment/lower_body.jpg')
+        
+        inference_allModels('upper_body', db_dir)
+        shutil.copy(os.path.join(db_dir, 'ladi/buffer', 'upper_body.png'), f'{input_dir}/buffer/target/upper_body.jpg')
+        inference_ladi('lower_body', db_dir, target_name='upper_body.jpg')
+
 
     else : 
-        target_bytes = await files[1].read()
         garment_bytes = await files[2].read()
-
-        
-        # TODO image byte 
-        target_image = Image.open(io.BytesIO(target_bytes))
-        target_image = target_image.convert("RGB")
 
         garment_image = Image.open(io.BytesIO(garment_bytes))
         garment_image = garment_image.convert("RGB")
 
-        input_dir = '/opt/ml/user_db/input/'
+        garment_image.save(f'{input_dir}/{category}.jpg')
+        garment_image.save(f'{input_dir}/buffer/garment/{category}.jpg')
 
-        os.makedirs(f'{input_dir}/buffer', exist_ok=True)
+        inference_allModels(category, db_dir)
 
-        target_image.save(f'{input_dir}/target.jpg')
-        target_image.save(f'{input_dir}/buffer/target/target.jpg')
-
-        garment_image.save(f'{input_dir}/garment.jpg')
-        garment_image.save(f'{input_dir}/buffer/garment/garment.jpg')
-
-    # schp  - (1024, 784), (512, 384)
-    target_buffer_dir = f'{input_dir}/buffer/target'
-    main_schp(target_buffer_dir)
-
-    
-    # openpose 
-    output_openpose_buffer_dir = '/opt/ml/user_db/openpose/buffer'
-    os.makedirs(output_openpose_buffer_dir, exist_ok=True)
-    main_openpose(target_buffer_dir, output_openpose_buffer_dir)
-    
-    # ladi-vton 
-    output_ladi_buffer_dir = '/opt/ml/user_db/ladi/buffer'
-    db_dir = '/opt/ml/user_db'
-    os.makedirs(output_ladi_buffer_dir, exist_ok=True)
-    
-    main_ladi(category, db_dir, output_ladi_buffer_dir, ladi_models)
-    main_cut_and_paste(category, db_dir)
-    
     return None
     ## return값 
     ## output dir

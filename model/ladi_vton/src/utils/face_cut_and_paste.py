@@ -32,10 +32,10 @@ import matplotlib.pyplot as plt
 from time import time
 
 
-def main_cut_and_paste(category, db_dir):
+def main_cut_and_paste(category, db_dir, target_name='target.jpg'):
 
     dataroot = db_dir
-    im_name = 'target.jpg'
+    im_name = target_name
     generative_name = 'lower_body.png'
     parse_name = im_name.replace('.jpg', '.png')
 
