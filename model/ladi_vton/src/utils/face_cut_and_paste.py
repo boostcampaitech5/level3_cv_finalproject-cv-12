@@ -56,32 +56,34 @@ def main_cut_and_paste(category, db_dir):
     im_parse = im_parse.resize((384, 512), Image.NEAREST)
     parse_array = np.array(im_parse)
 
-    if category == 'face':
-        parser_mask_changeable = (parse_array == label_map["hair"]).astype(np.float32) + \
-                            (parse_array == label_map["head"]).astype(np.float32) + \
-                            (parse_array == label_map["sunglasses"]).astype(np.float32) + \
-                            (parse_array == label_map["hat"]).astype(np.float32)
-                                
-        indices = np.where(parser_mask_changeable == 1)
+    # if category == 'face':
+    parser_mask_changeable = (parse_array == label_map["hair"]).astype(np.float32) + \
+                        (parse_array == label_map["head"]).astype(np.float32) + \
+                        (parse_array == label_map["sunglasses"]).astype(np.float32) + \
+                        (parse_array == label_map["hat"]).astype(np.float32) + \
+                        (parse_array == label_map["bag"]).astype(np.float32) + \
+                        (parse_array == label_map["scarf"]).astype(np.float32)
+                            
+    indices = np.where(parser_mask_changeable == 1)
     # print(len(indices[0]))
-    if category == 'lower_body':
-        parser_mask_changeable = (parse_array == label_map["skirt"]).astype(np.float32) + \
-                                (parse_array == label_map["pants"]).astype(np.float32)
-                                # (parse_array == label_map["left_leg"]).astype(np.float32) + \
-                                # (parse_array == label_map["right_leg"]).astype(np.float32) + \
-                                # (parse_array == label_map["right_shoe"]).astype(np.float32) + \
-                                # (parse_array == label_map["left_shoe"]).astype(np.float32)
+    # if category == 'lower_body':
+    #     parser_mask_changeable = (parse_array == label_map["skirt"]).astype(np.float32) + \
+    #                             (parse_array == label_map["pants"]).astype(np.float32)
+    #                             # (parse_array == label_map["left_leg"]).astype(np.float32) + \
+    #                             # (parse_array == label_map["right_leg"]).astype(np.float32) + \
+    #                             # (parse_array == label_map["right_shoe"]).astype(np.float32) + \
+    #                             # (parse_array == label_map["left_shoe"]).astype(np.float32)
                                 
                                 
-        indices = np.where(parser_mask_changeable == 0)
-    elif category == 'upper_body':
-        parser_mask_changeable = (parse_array == label_map["upper_clothes"]).astype(np.float32)
-                                # (parse_array == label_map["left_arm"]).astype(np.float32) + \
-                                # (parse_array == label_map["right_arm"]).astype(np.float32)
-        indices = np.where(parser_mask_changeable == 0)
-    elif category == 'dresses':
-        parser_mask_changeable = (parse_array == label_map["dress"]).astype(np.float32)
-        indices = np.where(parser_mask_changeable == 0)
+    #     indices = np.where(parser_mask_changeable == 0)
+    # elif category == 'upper_body':
+    #     parser_mask_changeable = (parse_array == label_map["upper_clothes"]).astype(np.float32)
+    #                             # (parse_array == label_map["left_arm"]).astype(np.float32) + \
+    #                             # (parse_array == label_map["right_arm"]).astype(np.float32)
+    #     indices = np.where(parser_mask_changeable == 0)
+    # elif category == 'dresses':
+    #     parser_mask_changeable = (parse_array == label_map["dress"]).astype(np.float32)
+    #     indices = np.where(parser_mask_changeable == 0)
 
     def overlay_arrays(origin_np, generatived_np, indices):
         # indices에서 위치 정보를 추출합니다.
