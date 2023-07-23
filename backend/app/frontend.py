@@ -7,6 +7,7 @@ from PIL import Image
 
 import streamlit as st
 from app.confirm_button_hack import cache_on_button_press
+import base64
 
 # SETTING PAGE CONFIG TO WIDE MODE
 ASSETS_DIR_PATH = os.path.join(Path(__file__).parent.parent.parent.parent, "assets")
@@ -17,24 +18,65 @@ root_password = 'a'
 
 category_pair = {'Upper':'upper_body', 'Lower':'lower_body', 'Upper & Lower':'upper_lower', 'Dress':'dresses'}
 
+def apply_custom_font(text, font_size=48):
+    # 글꼴 로드
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(current_dir)
+    font_filename = 'NanumSquareB.ttf'
+    font_path = os.path.join(parent_dir, "assets", font_filename)
+
+    try:
+        with open(font_path, "rb") as f:
+            font_data = f.read()
+        font_base64 = base64.b64encode(font_data).decode("utf-8")
+        font_style = f"font-family: 'CustomFont' ; font-size: {font_size}px;text-align: center;"
+        styled_text = f'<div style="{font_style}";>{text}</div>'
+        return f'<style>@font-face {{font-family: "CustomFont"; src: url(data:font/ttf;base64,{font_base64})}}</style>{styled_text}'
+    except Exception as e:
+        st.error(f"Error loading the font: {e}")
+        return None
+
 def user_guideline_for_human():
 
+    text1 = '전신 사진을 넣어주세요. '
+    text2 = '최대한 머리와 발끝을'
+    text3 = '사진의 위아래 테두리에 맞게 찍어주세요!'
+    styled_text1 = apply_custom_font(text1, 36)
+    styled_text2 = apply_custom_font(text2, 24)
+    styled_text3 = apply_custom_font(text3, 24)
     st.write(' ')
-    text1 = """<h4 style='text-align: center;'> 전신 사진을 넣어주세요.  </h4>"""
-    text1 = """<h4 style='text-align: center;'> 최대한 머리와 발끝을  </h4>"""
-    text2 = """<h4 style='text-align: center;'> 사진의 위아래 테두리에 맞게 찍어주세요! </h4>"""
+    st.write(' ')
+    st.write(' ')
+    st.write(' ')
+    st.markdown(styled_text1, unsafe_allow_html=True)
+    st.write(' ')
+    st.markdown(styled_text2, unsafe_allow_html=True)
+    st.markdown(styled_text3, unsafe_allow_html=True)
+
+    # st.write(' ')
+    # text1 = """<h4 style='text-align: center;'> 전신 사진을 넣어주세요.  </h4>"""
+    # text1 = """<h4 style='text-align: center;'> 최대한 머리와 발끝을  </h4>"""
+    # text2 = """<h4 style='text-align: center;'> 사진의 위아래 테두리에 맞게 찍어주세요! </h4>"""
     
-    st.markdown(text1, unsafe_allow_html=True)
-    st.markdown(text2, unsafe_allow_html=True)
+    # st.markdown(text1, unsafe_allow_html=True)
+    # st.markdown(text2, unsafe_allow_html=True)
 
 def user_guideline_for_garment():
-
+    text1 = '상의, 하의, 상의&하의, 드레스 카테고리를 선택 후,'
+    text2 = '단일 옷 사진을 넣어주세요 !'
+    styled_text1 = apply_custom_font(text1, 24)
+    styled_text2 = apply_custom_font(text2, 36)
     st.write(' ')
-    text1 = """<h4 style='text-align: center;'> 상의, 하의, 드레스 카테고리를 선택 후, </h4>"""
-    text2 = """<h4 style='text-align: center;'> 단일 옷 사진을 넣어주세요 !  </h4>"""
+    st.write(' ')
+    st.markdown(styled_text1, unsafe_allow_html=True)
+    st.markdown(styled_text2, unsafe_allow_html=True)
+
+    # st.write(' ')
+    # text1 = """<h4 style='text-align: center;'> 상의, 하의, 드레스 카테고리를 선택 후, </h4>"""
+    # text2 = """<h4 style='text-align: center;'> 단일 옷 사진을 넣어주세요 !  </h4>"""
     
-    st.markdown(text1, unsafe_allow_html=True)
-    st.markdown(text2, unsafe_allow_html=True)
+    # st.markdown(text1, unsafe_allow_html=True)
+    # st.markdown(text2, unsafe_allow_html=True)
 
 def check_modelLoading():
     api_url = "http://localhost:8001/get_boolean"
