@@ -22,6 +22,8 @@ sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton')
 sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton/src')
 sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton/src/utils')
 
+from get_clothing_mask import main_mask
+
 from inference import main_ladi
 from face_cut_and_paste import main_cut_and_paste
 
@@ -120,12 +122,12 @@ class Order(BaseModel):
 
 class OrderUpdate(BaseModel):
     products: List[Product] = Field(default_factory=list)
-
+    
 class InferenceImageProduct(Product):
     name: str = "inference_image_product"
     price: float = 100.0
     result: Optional[List]
-
+    
 @app.get("/order", description="주문 리스트를 가져옵니다")
 async def get_orders() -> List[Order]:
     return orders
@@ -146,12 +148,18 @@ def inference_allModels(category, db_dir):
     # schp  - (1024, 784), (512, 384)
     target_buffer_dir = os.path.join(input_dir, 'buffer/target')
     main_schp(target_buffer_dir)
-    
+ 
     # openpose 
     output_openpose_buffer_dir = os.path.join(db_dir, 'openpose/buffer')
     os.makedirs(output_openpose_buffer_dir, exist_ok=True)
     main_openpose(target_buffer_dir, output_openpose_buffer_dir)
-    
+    # /opt/ml/user_db/mask/buffer
+    # mask 
+    garment_dir = os.path.join(input_dir, 'buffer/garment')
+    output_mask_dir = os.path.join(db_dir, 'mask/buffer')
+    os.makedirs(output_mask_dir, exist_ok=True)
+    main_mask(category, garment_dir, output_mask_dir) 
+
     # ladi-vton 
     output_ladi_buffer_dir = os.path.join(db_dir, 'ladi/buffer')
     os.makedirs(output_ladi_buffer_dir, exist_ok=True)
@@ -165,9 +173,10 @@ def inference_ladi(category, db_dir, target_name='target.jpg'):
     output_ladi_buffer_dir = os.path.join(db_dir, 'ladi/buffer')
     os.makedirs(output_ladi_buffer_dir, exist_ok=True)
     
+    
+    
     main_ladi(category, db_dir, output_ladi_buffer_dir, ladi_models, target_name)
     main_cut_and_paste(category, db_dir, target_name)
-
 
 # post!!
 @app.post("/order", description="주문을 요청합니다")
