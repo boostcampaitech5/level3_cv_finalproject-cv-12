@@ -18,6 +18,7 @@ root_password = 'a'
 
 category_pair = {'Upper':'upper_body', 'Lower':'lower_body', 'Upper & Lower':'upper_lower', 'Dress':'dresses'}
 
+
 def apply_custom_font(text, font_size=48):
     # 글꼴 로드
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -89,25 +90,49 @@ def check_modelLoading():
         pass
     return is_modelLoading
 
-def show_garment_and_checkbox(uploaded_garment):
-    ## 옷을 보여주고, 아래에 체크박스 체크.
-    garment_bytes = uploaded_garment.getvalue()
-    garment_img = Image.open(io.BytesIO(garment_bytes))
-    st.image(garment_img, caption='Uploaded garment Image')
+## 이미지 리스트에 저장
+def append_imgList(garment_id, uploaded_garment, category):
 
-    if st.checkbox('체크') :
-        return True, garment_bytes
-    else : 
-        return False, None
+    garment_bytes = uploaded_garment.getvalue()
+    file = [
+        ('files', category),
+        ('files', garment_id),
+        ('files', (uploaded_garment.name, garment_bytes,
+                                    uploaded_garment.type))]
+    data = {"garment_id": garment_id}
+    response = requests.post("http://localhost:8001/add_data", files=file, params=data)
+    response.raise_for_status() ## 200이 아니면 예외처리
+
+## 저장된 이미지 리스트들을 체크박스와 함께 띄우는 함수 
+def show_garments_and_checkboxes(category):
+
+    response = requests.get(f"http://localhost:8001/get_db/{category}")
+    print("response!!!", response)
+    response.raise_for_status() ## 200이 아니면 예외처리
+
+    garment_db = response.json()  
+    print(garment_db)
+    ## 옷을 보여주고, 아래에 체크박스 체크.
+    for id, garment_byte in garment_db : 
+        garment_img = Image.open(io.BytesIO(garment_byte))
+        st.image(garment_img, caption=id, width=10)
+
+        if st.checkbox('체크') :
+            return True, garment_byte
+        else : 
+            return False, None
+
 
 def main():
     st.title("Welcome to VTON World :)")
     is_all_uploaded = False
     is_checked_garment = False
     is_uploaded_target = False
+    garment_id = 0
     with st.container():
         col1, col2, col3 = st.columns([1,1,1])
         files = [0, 0, 0, ('files', 0)]
+        is_checked = False
         with col1:
             st.header("상의")
             user_guideline_for_garment()
@@ -155,7 +180,9 @@ def main():
                 #     user_guideline_for_garment() 
 
                 if uploaded_garment :
-                    is_checked, garment_bytes = show_garment_and_checkbox(uploaded_garment)
+                    append_imgList(garment_id, uploaded_garment, category)
+                    is_checked, garment_bytes = show_garments_and_checkboxes(category)
+                    # is_checked, garment_bytes = append_imgList(garment_id, uploaded_garment, category)
                     print('is_checked', is_checked)
                     if is_checked :
                         is_checked_garment = is_checked
@@ -169,6 +196,8 @@ def main():
                         #     ('files', (uploaded_garment.name, garment_bytes,
                         #             uploaded_garment.type)),
                         # ]
+                    garment_id +=1
+                    
 
         with col2:
             st.header("드레스룸")

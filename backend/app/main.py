@@ -40,6 +40,29 @@ import shutil
 app = FastAPI()
 ladi_models = None
 
+garment_db_bytes = {'upper_body': [], 'lower_body': [], 'dresses': []}
+
+
+@app.post("/add_data", description="데이터 저장")
+async def add_garment_to_db(files: List[UploadFile] = File(...), garment_id: int = None):
+    byte_string = await files[0].read()
+    string_io = io.BytesIO(byte_string)
+    category = string_io.read().decode('utf-8')
+    
+    print('category in main', category)
+    print('garment_id in main', garment_id)
+
+    garment_bytes = await files[2].read()
+
+    garment_db_bytes[category].append((garment_id, garment_bytes)) 
+
+@app.get("/get_db/{category}")
+async def get_DB(category: str) :
+    if category in garment_db_bytes:
+        return garment_db_bytes[category]
+    else:
+        return {"error": "Invalid category"}
+
 def load_ladiModels():
     pretrained_model_name_or_path = "stabilityai/stable-diffusion-2-inpainting"
 
@@ -237,6 +260,7 @@ async def make_order(
     new_order = Order(products=products)
     orders.append(new_order)
     return new_order
+
 
 
 def update_order_by_id(order_id: UUID, order_update: OrderUpdate) -> Optional[Order]:
