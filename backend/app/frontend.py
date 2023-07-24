@@ -89,29 +89,26 @@ def check_modelLoading():
         pass
     return is_modelLoading
 
+def show_garment_and_checkbox(uploaded_garment):
+    ## 옷을 보여주고, 아래에 체크박스 체크.
+    garment_bytes = uploaded_garment.getvalue()
+    garment_img = Image.open(io.BytesIO(garment_bytes))
+    st.image(garment_img, caption='Uploaded garment Image')
+
+    if st.checkbox('체크') :
+        return True, garment_bytes
+    else : 
+        return False, None
+
 def main():
     st.title("Welcome to VTON World :)")
     is_all_uploaded = False
+    uploaded_target = False
     with st.container():
         col1, col2, col3 = st.columns([1,1,1])
         
         with col1:
-            st.header("Human")
-            user_guideline_for_human()
-            # target_img = Image.open('/opt/ml/user_db/input/buffer/target/target.jpg')
-            uploaded_target = st.file_uploader("Choose an target image", type=["jpg", "jpeg", "png"])
-
-            if uploaded_target:
-                target_bytes = uploaded_target.getvalue()
-                target_img = Image.open(io.BytesIO(target_bytes))
-
-                st.image(target_img, caption='Uploaded target Image')
-            else : 
-                example_img = Image.open('/opt/ml/level3_cv_finalproject-cv-12/backend/app/utils/example.jpg')
-                st.image(example_img, caption='Example of target Image')
-        
-        with col2:
-            st.header("Cloth")
+            st.header("상의")
             user_guideline_for_garment()
             category_list = ['Upper', 'Lower', 'Upper & Lower', 'Dress']
             selected_category = st.selectbox('Choose an category of garment', category_list)
@@ -151,17 +148,14 @@ def main():
                                 uploaded_garment2.type))
                     ]
 
-
             else : 
                 uploaded_garment = st.file_uploader("Choose an garment image", type=["jpg", "jpeg", "png"])
-
                 # if not uploaded_garment : 
-                #     user_guideline_for_garment()
+                #     user_guideline_for_garment() 
 
-                if uploaded_garment:
-                    garment_bytes = uploaded_garment.getvalue()
-                    garment_img = Image.open(io.BytesIO(garment_bytes))
-                    st.image(garment_img, caption='Uploaded garment Image')
+                if uploaded_garment :
+                    is_checked, garment_bytes = show_garment_and_checkbox(uploaded_garment)
+                    print('is_checked', is_checked)
 
                 if uploaded_target and uploaded_garment :
                     is_all_uploaded = True
@@ -173,12 +167,25 @@ def main():
                                 uploaded_garment.type)),
                     ]
 
+        with col2:
+            st.header("드레스룸")
+            user_guideline_for_human()
+            # target_img = Image.open('/opt/ml/user_db/input/buffer/target/target.jpg')
+            uploaded_target = st.file_uploader("Choose an target image", type=["jpg", "jpeg", "png"])
+
+            if uploaded_target:
+                target_bytes = uploaded_target.getvalue()
+                target_img = Image.open(io.BytesIO(target_bytes))
+
+                st.image(target_img, caption='Uploaded target image')
+            else : 
+                example_img = Image.open('/opt/ml/level3_cv_finalproject-cv-12/backend/app/utils/example.jpg')
+                st.image(example_img, caption='Example of target image')
+        
         with col3:  
             st.header("Result")
 
-
         if is_all_uploaded:
-            
             with col3:  
                 st.write(' ')
                 empty_slot = st.empty()
