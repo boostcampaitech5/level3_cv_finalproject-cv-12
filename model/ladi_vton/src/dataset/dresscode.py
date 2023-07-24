@@ -133,10 +133,11 @@ class DressCodeDataset(data.Dataset):
             cloth = Image.open(os.path.join(dataroot, 'input/buffer/garment', c_name))
 
             #############수정 해야함 !! test로 mask 없앰
-            # mask = Image.open(os.path.join(dataroot, 'masks', c_name.replace(".jpg", ".png")))
+            # mask = Image.open(os.path.join(dataroot, 'mask/buffer', c_name.replace(".jpg", ".png")))
+            mask = Image.open(os.path.join(dataroot, 'mask/buffer', c_name))
 
             # Mask out the background
-            # cloth = Image.composite(ImageOps.invert(mask.convert('L')), cloth, ImageOps.invert(mask.convert('L')))
+            cloth = Image.composite(ImageOps.invert(mask.convert('L')), cloth, ImageOps.invert(mask.convert('L')))
             cloth = cloth.resize((self.width, self.height))
             cloth = self.transform(cloth)  # [-1,1]
 

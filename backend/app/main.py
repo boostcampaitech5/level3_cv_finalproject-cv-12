@@ -119,7 +119,7 @@ class Order(BaseModel):
         self.products.append(product)
         self.updated_at = datetime.now()
         return self
-
+    
 class OrderUpdate(BaseModel):
     products: List[Product] = Field(default_factory=list)
     
@@ -163,8 +163,8 @@ def inference_allModels(category, db_dir):
     # ladi-vton 
     output_ladi_buffer_dir = os.path.join(db_dir, 'ladi/buffer')
     os.makedirs(output_ladi_buffer_dir, exist_ok=True)
-    
-    main_ladi(category, db_dir, output_ladi_buffer_dir, ladi_models)
+ 
+    main_ladi(category, db_dir, output_ladi_buffer_dir, ladi_models, output_mask_dir)
     main_cut_and_paste(category, db_dir)
 
 def inference_ladi(category, db_dir, target_name='target.jpg'):
@@ -172,8 +172,6 @@ def inference_ladi(category, db_dir, target_name='target.jpg'):
     # ladi-vton 
     output_ladi_buffer_dir = os.path.join(db_dir, 'ladi/buffer')
     os.makedirs(output_ladi_buffer_dir, exist_ok=True)
-    
-    
     
     main_ladi(category, db_dir, output_ladi_buffer_dir, ladi_models, target_name)
     main_cut_and_paste(category, db_dir, target_name)
