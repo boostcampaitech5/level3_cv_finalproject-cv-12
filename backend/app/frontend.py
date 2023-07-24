@@ -103,10 +103,11 @@ def show_garment_and_checkbox(uploaded_garment):
 def main():
     st.title("Welcome to VTON World :)")
     is_all_uploaded = False
-    uploaded_target = False
+    is_checked_garment = False
+    is_uploaded_target = False
     with st.container():
         col1, col2, col3 = st.columns([1,1,1])
-        
+        files = [0, 0, 0, ('files', 0)]
         with col1:
             st.header("상의")
             user_guideline_for_garment()
@@ -156,21 +157,23 @@ def main():
                 if uploaded_garment :
                     is_checked, garment_bytes = show_garment_and_checkbox(uploaded_garment)
                     print('is_checked', is_checked)
-
-                if uploaded_target and uploaded_garment :
-                    is_all_uploaded = True
-                    files = [
-                        ('files', category),
-                        ('files', (uploaded_target.name, target_bytes,
-                                uploaded_target.type)),
-                        ('files', (uploaded_garment.name, garment_bytes,
-                                uploaded_garment.type)),
-                    ]
+                    if is_checked :
+                        is_checked_garment = is_checked
+                        files[0] = ('files', category)
+                        files[2] = ('files', (uploaded_garment.name, garment_bytes,
+                                    uploaded_garment.type))
+                        # files = [
+                        #     ('files', category),
+                        #     ('files', (uploaded_target.name, target_bytes,
+                        #             uploaded_target.type)),
+                        #     ('files', (uploaded_garment.name, garment_bytes,
+                        #             uploaded_garment.type)),
+                        # ]
 
         with col2:
             st.header("드레스룸")
+             # is_checked_garment
             user_guideline_for_human()
-            # target_img = Image.open('/opt/ml/user_db/input/buffer/target/target.jpg')
             uploaded_target = st.file_uploader("Choose an target image", type=["jpg", "jpeg", "png"])
 
             if uploaded_target:
@@ -178,15 +181,15 @@ def main():
                 target_img = Image.open(io.BytesIO(target_bytes))
 
                 st.image(target_img, caption='Uploaded target image')
+                
+                files[1] = ('files', (uploaded_target.name, target_bytes,
+                            uploaded_target.type))
             else : 
                 example_img = Image.open('/opt/ml/level3_cv_finalproject-cv-12/backend/app/utils/example.jpg')
                 st.image(example_img, caption='Example of target image')
-        
-        with col3:  
-            st.header("Result")
-
-        if is_all_uploaded:
-            with col3:  
+            
+            if is_checked and uploaded_target : 
+                
                 st.write(' ')
                 empty_slot = st.empty()
                 empty_slot.markdown("<h2 style='text-align: center;'>\nLoading...</h2>", unsafe_allow_html=True)
@@ -217,14 +220,51 @@ def main():
                 st.write(' ')
                 st.write(' ')
                 st.image(final_img, caption='Final Image', use_column_width=True)
+
+
+        with col3:  
+            st.header("Result")
+
+        # if is_all_uploaded:
+        #     with col3:  
+        #         st.write(' ')
+        #         empty_slot = st.empty()
+        #         empty_slot.markdown("<h2 style='text-align: center;'>\nLoading...</h2>", unsafe_allow_html=True)
                 
-                # option = '선택 안 함'
-                # down_btn = st.download_button(
-                #     label='Download Image',
-                #     data=dehaze_image_bytes,
-                #     file_name='dehazed_image.jpg',
-                #     mime='image/jpg',
-                #     on_click=save_btn_click(option, dehaze_image_bytes)
-                # )
+        #         while check_modelLoading() :
+        #             pass
+
+        #         import time
+        #         t = time.time()
+        #         response = requests.post("http://localhost:8001/order", files=files)
+        #         response.raise_for_status() ## 200이 아니면 예외처리
+        #         print('total processing time: ', time.time() - t)
+                
+        #         empty_slot.empty()
+        #         empty_slot.markdown("<h2 style='text-align: center;'>Here it is !</h2>", unsafe_allow_html=True)
+
+        #         output_ladi_buffer_dir = '/opt/ml/user_db/ladi/buffer'
+        #         final_result_dir = output_ladi_buffer_dir
+        #         if category =='upper_lower':
+        #             final_img = Image.open(os.path.join(final_result_dir, 'lower_body.png'))
+        #         else : 
+        #             final_img = Image.open(os.path.join(final_result_dir, f'{category}.png'))
+                
+        #         st.write(' ')
+        #         st.write(' ')
+        #         st.write(' ')
+        #         st.write(' ')
+        #         st.write(' ')
+        #         st.write(' ')
+        #         st.image(final_img, caption='Final Image', use_column_width=True)
+                
+        #         # option = '선택 안 함'
+        #         # down_btn = st.download_button(
+        #         #     label='Download Image',
+        #         #     data=dehaze_image_bytes,
+        #         #     file_name='dehazed_image.jpg',
+        #         #     mime='image/jpg',
+        #         #     on_click=save_btn_click(option, dehaze_image_bytes)
+        #         # )
 
 main()
