@@ -163,12 +163,16 @@ def inference_allModels(category, db_dir):
     # ladi-vton 
     output_ladi_buffer_dir = os.path.join(db_dir, 'ladi/buffer')
     os.makedirs(output_ladi_buffer_dir, exist_ok=True)
- 
-    main_ladi(category, db_dir, output_ladi_buffer_dir, ladi_models, output_mask_dir)
+
+    main_ladi(category, db_dir, output_ladi_buffer_dir, ladi_models)
     main_cut_and_paste(category, db_dir)
 
 def inference_ladi(category, db_dir, target_name='target.jpg'):
-    
+    input_dir = os.path.join(db_dir, 'input')
+    garment_dir = os.path.join(input_dir, 'buffer/garment')
+    output_mask_dir = os.path.join(db_dir, 'mask/buffer')
+    main_mask(category, garment_dir, output_mask_dir) 
+
     # ladi-vton 
     output_ladi_buffer_dir = os.path.join(db_dir, 'ladi/buffer')
     os.makedirs(output_ladi_buffer_dir, exist_ok=True)

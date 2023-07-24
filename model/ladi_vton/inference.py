@@ -97,7 +97,7 @@ def parse_args():
 
 
 @torch.inference_mode()
-def main_ladi(category_, db_dir, output_buffer_dir, ladi_models, output_mask_dir, target_name='target.jpg'):
+def main_ladi(category_, db_dir, output_buffer_dir, ladi_models, target_name='target.jpg'):
     args = parse_args()
     args.dresscode_dataroot = db_dir
     args.output_dir = output_buffer_dir
