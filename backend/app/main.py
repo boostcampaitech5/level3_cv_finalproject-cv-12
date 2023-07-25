@@ -40,28 +40,38 @@ import shutil
 app = FastAPI()
 ladi_models = None
 
-garment_db_bytes = {'upper_body': [], 'lower_body': [], 'dresses': []}
-
+db_dir = '/opt/ml/user_db'
 
 @app.post("/add_data", description="데이터 저장")
-async def add_garment_to_db(files: List[UploadFile] = File(...), garment_id: int = None):
-    byte_string = await files[0].read()
-    string_io = io.BytesIO(byte_string)
+async def add_garment_to_db(files: List[UploadFile] = File(...)):
+    byte_string = await files[0].read() ##await 
+    string_io = io.BytesIO(byte_string) 
     category = string_io.read().decode('utf-8')
     
     print('category in main', category)
-    print('garment_id in main', garment_id)
 
-    garment_bytes = await files[2].read()
+    garment_bytes = await files[1].read() ##await
+    garment_name = files[1].filename  
+    print('!!!! garment_name', garment_name)
+    garment_image = Image.open(io.BytesIO(garment_bytes))
+    garment_image = garment_image.convert("RGB")
+    
+    garment_image.save(os.path.join(db_dir, 'input/garment', category, f'{garment_name}'))
 
-    garment_db_bytes[category].append((garment_id, garment_bytes)) 
+def read_image_as_bytes(image_path):
+    with open(image_path, "rb") as file:
+        image_data = file.read()
+    return image_data
 
-@app.get("/get_db/{category}")
+@app.get("/get_db/{category}") 
 async def get_DB(category: str) :
-    if category in garment_db_bytes:
-        return garment_db_bytes[category]
-    else:
-        return {"error": "Invalid category"}
+    category_dir = os.path.join(db_dir, 'input/garment', category)
+    garment_db_bytes = {}
+    for filename in os.listdir(category_dir):
+        garment_id = filename[:-4]
+        garment_byte = read_image_as_bytes(os.path.join(category_dir, filename))
+        garment_db_bytes[garment_id] = garment_byte
+    return garment_db_bytes
 
 def load_ladiModels():
     pretrained_model_name_or_path = "stabilityai/stable-diffusion-2-inpainting"
@@ -191,7 +201,6 @@ def inference_ladi(category, db_dir, target_name='target.jpg'):
     main_ladi(category, db_dir, output_ladi_buffer_dir, ladi_models, target_name)
     main_cut_and_paste(category, db_dir, target_name)
 
-
 # post!!
 @app.post("/order", description="주문을 요청합니다")
 async def make_order(
@@ -199,7 +208,6 @@ async def make_order(
                      model: MyEfficientNet = Depends(get_model),
                      config: Dict[str, Any] = Depends(get_config)):
 
-    db_dir = '/opt/ml/user_db'
     input_dir = '/opt/ml/user_db/input/'
 
     # category : files[0], target:files[1], garment:files[2]
@@ -215,7 +223,7 @@ async def make_order(
 
     os.makedirs(f'{input_dir}/buffer', exist_ok=True)
 
-    target_image.save(f'{input_dir}/target.jpg')
+    # target_image.save(f'{input_dir}/target.jpg')
     target_image.save(f'{input_dir}/buffer/target/target.jpg')
 
     if category == 'upper_lower': 
@@ -228,9 +236,9 @@ async def make_order(
         garment_lower_image = garment_lower_image.convert("RGB")
 
 
-        garment_upper_image.save(f'{input_dir}/upper_body.jpg')
+        # garment_upper_image.save(f'{input_dir}/upper_body.jpg')
         garment_upper_image.save(f'{input_dir}/buffer/garment/upper_body.jpg')
-        garment_lower_image.save(f'{input_dir}/lower_body.jpg')
+        # garment_lower_image.save(f'{input_dir}/lower_body.jpg')
         garment_lower_image.save(f'{input_dir}/buffer/garment/lower_body.jpg')
         
         inference_allModels('upper_body', db_dir)
@@ -239,13 +247,20 @@ async def make_order(
 
 
     else : 
-        garment_bytes = await files[2].read()
+        ## file로 전송됐을 때
+        # garment_bytes = await files[2].read()
+        # garment_image = Image.open(io.BytesIO(garment_bytes))
+        # garment_image = garment_image.convert("RGB")
+        # garment_image.save(f'{input_dir}/buffer/garment/{category}.jpg')
 
-        garment_image = Image.open(io.BytesIO(garment_bytes))
-        garment_image = garment_image.convert("RGB")
+        ## string으로 전송됐을 때(filename)
+        byte_string = await files[2].read()
+        string_io = io.BytesIO(byte_string)
+        filename = string_io.read().decode('utf-8')
 
-        garment_image.save(f'{input_dir}/{category}.jpg')
+        garment_image = Image.open(os.path.join(db_dir, 'input/garment', category, filename))
         garment_image.save(f'{input_dir}/buffer/garment/{category}.jpg')
+
 
         inference_allModels(category, db_dir)
 
