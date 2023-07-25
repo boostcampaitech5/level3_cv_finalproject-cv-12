@@ -127,7 +127,7 @@ def show_garments_and_checkboxes(category):
         # else : 
         #     return False, None
     
-    selected_garment = st.selectbox('입을 옷을 선택해주세요.', filenames)
+    selected_garment = st.selectbox('입을 옷을 선택해주세요.', [f[:-4] for f in filenames])
     return filenames, selected_garment
 
 def main():
@@ -135,7 +135,9 @@ def main():
     with st.container():
         col1, col2, col3 = st.columns([1,1,1])
         files = [0, 0, 0, ('files', 0)]
-        is_checked = False
+        is_selected_garment = False
+        gen_start = False
+        
         with col1:
             st.header("상의👚")
             # user_guideline_for_garment()
@@ -179,36 +181,44 @@ def main():
 
             else : 
 
-                uploaded_garment = st.file_uploader("추가할 옷을 넣어주세요.", type=["jpg", "jpeg", "png"])
+                uploaded_garment = st.file_uploader("추가할 상의를 넣어주세요.", type=["jpg", "jpeg", "png"])
 
                 if uploaded_garment :
                     append_imgList(uploaded_garment, category)
 
                 filenames, selected_upper = show_garments_and_checkboxes(category)
                 if selected_upper :
-                    is_checked_garment = is_checked
+                    is_selected_garment = True
                     files[0] = ('files', category)
-                    files[2] = ('files', selected_upper)
+                    files[2] = ('files', f'{selected_upper}.jpg')
 
         with col2:
             st.header("드레스룸")
              # is_checked_garment
             user_guideline_for_human()
-            uploaded_target = st.file_uploader("Choose an target image", type=["jpg", "jpeg", "png"])
-
+            col2_1, col2_2, = st.columns([1,1])
+            with col2_1 : 
+                uploaded_target = st.file_uploader("Choose an target image", type=["jpg", "jpeg", "png"])
+            with col2_2 : 
+                if st.button("옷 입히기 시작!"):
+                    if  uploaded_target and is_selected_garment : 
+                        gen_start = True
+            
+            human_slot = st.empty()
             if uploaded_target:
                 target_bytes = uploaded_target.getvalue()
                 target_img = Image.open(io.BytesIO(target_bytes))
 
-                st.image(target_img, caption='Uploaded target image')
+                human_slot.empty()
+                human_slot.image(target_img, caption='Uploaded target image')
                 
                 files[1] = ('files', (uploaded_target.name, target_bytes,
                             uploaded_target.type))
             else : 
                 example_img = Image.open('/opt/ml/level3_cv_finalproject-cv-12/backend/app/utils/example.jpg')
-                st.image(example_img, caption='Example of target image')
+                human_slot.image(example_img, width=300, use_column_width=True, caption='Example of target image')
             
-            if is_checked and uploaded_target : 
+            if gen_start : 
                 
                 st.write(' ')
                 empty_slot = st.empty()
@@ -239,14 +249,27 @@ def main():
                 st.write(' ')
                 st.write(' ')
                 st.write(' ')
-                st.image(final_img, caption='Final Image', use_column_width=True)
+                
+                human_slot.empty()
+                human_slot.image(final_img, caption='Final Image', use_column_width=True)
 
 
         with col3:  
             st.header("하의👖")
-
-
+            category = 'lower_body'
             
+            uploaded_garment = st.file_uploader("추가할 하의를 넣어주세요.", type=["jpg", "jpeg", "png"])
+
+            if uploaded_garment :
+                append_imgList(uploaded_garment, category)
+
+            filenames, selected_upper = show_garments_and_checkboxes(category)
+            if selected_upper :
+                is_selected_garment = True
+                files[0] = ('files', category)
+                files[2] = ('files', f'{selected_upper}.jpg')
+
+
 
         # if is_all_uploaded:
         #     with col3:  
