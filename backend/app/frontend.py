@@ -126,7 +126,9 @@ def show_garments_and_checkboxes(category):
         #     return True, garment_byte
         # else : 
         #     return False, None
-    return filenames
+    
+    selected_garment = st.selectbox('입을 옷을 선택해주세요.', filenames)
+    return filenames, selected_garment
 
 def main():
     st.title("🌳나만의 드레스룸🌳") #👗
@@ -136,13 +138,13 @@ def main():
         is_checked = False
         with col1:
             st.header("상의👚")
-            user_guideline_for_garment()
+            # user_guideline_for_garment()
             category_list = ['Upper', 'Lower', 'Upper & Lower', 'Dress']
             selected_category = st.selectbox('Choose an category of garment', category_list)
-            # uploaded_garment = Image.open('/opt/ml/user_db/input/buffer/garment/garment.jpg')
             
             category = category_pair[selected_category]
             print('**category:', category)
+            category = 'upper_body'
 
             if selected_category == 'Upper & Lower':
                 uploaded_garment1 = st.file_uploader("Choose an upper image", type=["jpg", "jpeg", "png"])
@@ -176,18 +178,17 @@ def main():
                     ]
 
             else : 
-                filenames = show_garments_and_checkboxes(category)
-                
-                selected_upper = st.selectbox('입을 옷을 선택해주세요.', filenames)
-                if selected_upper :
-                    is_checked_garment = is_checked
-                    files[0] = ('files', category)
-                    files[2] = ('files', selected_upper)
 
                 uploaded_garment = st.file_uploader("추가할 옷을 넣어주세요.", type=["jpg", "jpeg", "png"])
 
                 if uploaded_garment :
                     append_imgList(uploaded_garment, category)
+
+                filenames, selected_upper = show_garments_and_checkboxes(category)
+                if selected_upper :
+                    is_checked_garment = is_checked
+                    files[0] = ('files', category)
+                    files[2] = ('files', selected_upper)
 
         with col2:
             st.header("드레스룸")
@@ -243,6 +244,9 @@ def main():
 
         with col3:  
             st.header("하의👖")
+
+
+            
 
         # if is_all_uploaded:
         #     with col3:  
