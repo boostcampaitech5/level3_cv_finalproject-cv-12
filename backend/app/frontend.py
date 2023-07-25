@@ -109,7 +109,6 @@ def append_imgList(uploaded_garment, category):
 def show_garments_and_checkboxes(category):
 
     category_dir = os.path.join(db_dir, 'input/garment', category)
-    garment_db_bytes = {}
     filenames = os.listdir(category_dir)
     
     num_columns = 3 
@@ -177,31 +176,18 @@ def main():
                     ]
 
             else : 
-                uploaded_garment = st.file_uploader("Choose an garment image", type=["jpg", "jpeg", "png"])
-                # if not uploaded_garment :
-                #     user_guideline_for_garment()
+                filenames = show_garments_and_checkboxes(category)
+                
+                selected_upper = st.selectbox('입을 옷을 선택해주세요.', filenames)
+                if selected_upper :
+                    is_checked_garment = is_checked
+                    files[0] = ('files', category)
+                    files[2] = ('files', selected_upper)
+
+                uploaded_garment = st.file_uploader("추가할 옷을 넣어주세요.", type=["jpg", "jpeg", "png"])
 
                 if uploaded_garment :
-
                     append_imgList(uploaded_garment, category)
-                    filenames = show_garments_and_checkboxes(category)
-                    
-                    selected_upper = st.selectbox('입을 옷을 선택해주세요.', filenames)
-                    if selected_upper :
-                        is_checked_garment = is_checked
-                        files[0] = ('files', category)
-                        files[2] = ('files', selected_upper)
-                        # files[2] = ('files', (uploaded_garment.name, garment_bytes,
-                        #             uploaded_garment.type))
-                        
-                        # files = [
-                        #     ('files', category),
-                        #     ('files', (uploaded_target.name, target_bytes,
-                        #             uploaded_target.type)),
-                        #     ('files', (uploaded_garment.name, garment_bytes,
-                        #             uploaded_garment.type)),
-                        # ]
-                    
 
         with col2:
             st.header("드레스룸")
