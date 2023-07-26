@@ -39,37 +39,14 @@ def apply_custom_font(text, font_size=48):
 
 def user_guideline_for_human():
 
-    # text1 = '전신 사진을 넣어주세요.'
-    # text2 = '아래 예시 사진처럼, 머리와 발끝을'
-    # text3 = '최대한 사진의 위아래 테두리에 맞게 찍어주세요.'
-    # styled_text1 = apply_custom_font(text1, 24)
-    # styled_text2 = apply_custom_font(text2, 24)
-    # styled_text3 = apply_custom_font(text3, 24)
-    # st.write(' ')
-    # st.write(' ')
-    # st.write(' ')
-    # st.write(' ')
-    # st.markdown(styled_text1, unsafe_allow_html=True)
-    # st.write(' ')
-    # st.markdown(styled_text2, unsafe_allow_html=True)
-    # st.markdown(styled_text3, unsafe_allow_html=True)
-
     st.write(' ')
-    text1 = """<h5 style=''> 1. 전신 사진을 넣어주세요.  </h5>"""
-    text2 = """<h5 style=''> 2. 아래 예시 사진과 같이, 최대한 사진의 위아래 테두리에 맞게 찍어주세요. </h5>"""
+    text1 = """<h6 style=''> 1. 전신 사진을 넣어주세요.  </h6>"""
+    text2 = """<h6 style=''> 2. 아래 예시 사진과 같이, 최대한 사진의 위아래 테두리에 맞게 찍어주세요. </h6>"""
     
     st.markdown(text1, unsafe_allow_html=True)
     st.markdown(text2, unsafe_allow_html=True)
 
 def user_guideline_for_garment():
-    # text1 = '1. 상의, 하의, 상의&하의, 드레스 카테고리를 선택해주세요.'
-    # text2 = '2. 단일 옷 사진을 넣어주세요.'
-    # styled_text1 = apply_custom_font(text1, 24)
-    # styled_text2 = apply_custom_font(text2, 24)
-    # st.write(' ')
-    # st.write(' ')
-    # st.markdown(styled_text1, unsafe_allow_html=True)
-    # st.markdown(styled_text2, unsafe_allow_html=True)
 
     st.write(' ')
     text1 = """<h5 style=''> 1. 상의, 하의, 상의&하의, 드레스 카테고리를 선택해주세요. </h5>""" #text-align: center;
@@ -130,8 +107,81 @@ def show_garments_and_checkboxes(category):
     selected_garment = st.selectbox('입을 옷을 선택해주세요.', [f[:-4] for f in filenames])
     return filenames, selected_garment
 
+def md_style():
+    st.markdown(
+        """
+        <style>
+        .center-aligned-title {
+            text-align: center;
+            margin-top: 0rem;
+            margin-bottom: 1rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        """
+        <style>
+        .custom-button {
+            background-color: #3498db;
+            color: white;
+            font-size: 16px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .custom-button:hover {
+            background-color: #2980b9;
+        }
+        .center-aligned-button {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px; 
+
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        """
+        <style>
+        .center-aligned-header {
+            text-align: center;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    st.markdown(
+        """
+        <style>
+        .custom-column {
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .center-column {
+            background-color: #e0e0e0; /* 중앙 컬럼의 배경색 지정 */
+        }
+        .custom-text {
+            background-color: #e0e0e0; /* 텍스트의 배경색 지정 */
+            padding: 10px;
+            border-radius: 5px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
 def main():
-    st.title("🌳나만의 드레스룸🌳") #👗
+    md_style()
+    # st.title("d") #🌳나만의 드레스룸🌳
+    st.markdown("<h1 class='center-aligned-title'>🌳나만의 드레스룸🌳</h1>", unsafe_allow_html=True)
+
     with st.container():
         col1, col2, col3 = st.columns([1,1,1])
         files = [0, 0, 0, ('files', 0)]
@@ -139,7 +189,8 @@ def main():
         gen_start = False
         
         with col1:
-            st.header("상의👚")
+            st.markdown("<h3 class='center-aligned-header'>상의👚</h3>", unsafe_allow_html=True)
+
             # user_guideline_for_garment()
             category_list = ['Upper', 'Lower', 'Upper & Lower', 'Dress']
             selected_category = st.selectbox('Choose an category of garment', category_list)
@@ -193,16 +244,22 @@ def main():
                     files[2] = ('files', f'{selected_upper}.jpg')
 
         with col2:
-            st.header("드레스룸")
+            
+            # st.markdown("<div class='custom-column center-column'>", unsafe_allow_html=True) # 중앙 컬럼에 .center-column 클래스 추가
+            # st.markdown("<div class='custom-text'>This is column 2 content.</div>", unsafe_allow_html=True) # 텍스트를 배경색과 함께 출력
+            # st.markdown("</div>", unsafe_allow_html=True)
+
+            st.markdown("<h3 class='center-aligned-header'>드레스룸🚪</h3>", unsafe_allow_html=True)
+            # st.markdown("</div>", unsafe_allow_html=True)
              # is_checked_garment
             user_guideline_for_human()
-            col2_1, col2_2, = st.columns([1,1])
-            with col2_1 : 
-                uploaded_target = st.file_uploader("Choose an target image", type=["jpg", "jpeg", "png"])
-            with col2_2 : 
-                if st.button("옷 입히기 시작!"):
-                    if  uploaded_target and is_selected_garment : 
-                        gen_start = True
+            uploaded_target = st.file_uploader("Choose an target image", type=["jpg", "jpeg", "png"])
+            
+            start_button = st.markdown("<div class='center-aligned-button'><button class='custom-button'>옷 입히기 시작</button></div>", unsafe_allow_html=True)
+
+            if start_button:
+                if  uploaded_target and is_selected_garment : 
+                    gen_start = True
             
             human_slot = st.empty()
             if uploaded_target:
@@ -255,7 +312,7 @@ def main():
 
 
         with col3:  
-            st.header("하의👖")
+            st.markdown("<h3 class='center-aligned-header'>하의👖</h3>", unsafe_allow_html=True)
             category = 'lower_body'
             
             uploaded_garment = st.file_uploader("추가할 하의를 넣어주세요.", type=["jpg", "jpeg", "png"])
