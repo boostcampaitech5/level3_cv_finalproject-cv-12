@@ -146,7 +146,6 @@ def md_style():
         """,
         unsafe_allow_html=True
     )
-
     st.markdown(
         """
         <style>
@@ -177,6 +176,7 @@ def md_style():
         unsafe_allow_html=True
     )
 
+
 def main():
     md_style()
     # st.title("d") #🌳나만의 드레스룸🌳
@@ -186,81 +186,53 @@ def main():
         col1, col2, col3 = st.columns([1,1,1])
         files = [0, 0, 0, ('files', 0)]
         is_selected_garment = False
+        is_selected_upper = False
+        is_selected_lower = False
+        is_selected_dress = False
         gen_start = False
-        
+
         with col1:
             st.markdown("<h3 class='center-aligned-header'>상의👚</h3>", unsafe_allow_html=True)
 
             # user_guideline_for_garment()
-            category_list = ['Upper', 'Lower', 'Upper & Lower', 'Dress']
-            selected_category = st.selectbox('Choose an category of garment', category_list)
-            
-            category = category_pair[selected_category]
-            print('**category:', category)
             category = 'upper_body'
 
-            if selected_category == 'Upper & Lower':
-                uploaded_garment1 = st.file_uploader("Choose an upper image", type=["jpg", "jpeg", "png"])
-                uploaded_garment2 = st.file_uploader("Choose an lower image", type=["jpg", "jpeg", "png"])
-                # if not uploaded_garment1 and not uploaded_garment2 : 
-                #     user_guideline_for_garment()
+            uploaded_garment = st.file_uploader("추가할 상의를 넣어주세요.", type=["jpg", "jpeg", "png"])
 
-                col2_1, col2_2, = st.columns([1,1])
-                with col2_1:
-                    if uploaded_garment1:
-                        garment_bytes1 = uploaded_garment1.getvalue()
-                        garment_img1 = Image.open(io.BytesIO(garment_bytes1))
-                        st.image(garment_img1, caption='Uploaded upper Image')
-                
-                with col2_2:
-                    if uploaded_garment2:
-                        garment_bytes2 = uploaded_garment2.getvalue()
-                        garment_img2 = Image.open(io.BytesIO(garment_bytes2))
-                        st.image(garment_img2, caption='Uploaded lower Image')
+            if uploaded_garment :
+                append_imgList(uploaded_garment, category)
 
-                if uploaded_target and uploaded_garment1 and uploaded_garment2:
-                    is_all_uploaded = True
-                    files = [
-                        ('files', category),
-                        ('files', (uploaded_target.name, target_bytes,
-                                uploaded_target.type)),
-                        ('files', (uploaded_garment1.name, garment_bytes1,
-                                uploaded_garment1.type)),
-                        ('files', (uploaded_garment2.name, garment_bytes2,
-                                uploaded_garment2.type))
-                    ]
+            filenames, selected_upper = show_garments_and_checkboxes(category)
+            if selected_upper :
+                is_selected_upper = True
+                files[2] = ('files', f'{selected_upper}.jpg')
 
-            else : 
 
-                uploaded_garment = st.file_uploader("추가할 상의를 넣어주세요.", type=["jpg", "jpeg", "png"])
+        with col3:  
+            st.markdown("<h3 class='center-aligned-header'>하의👖</h3>", unsafe_allow_html=True)
+            category = 'lower_body'
+            
+            uploaded_garment = st.file_uploader("추가할 하의를 넣어주세요.", type=["jpg", "jpeg", "png"])
 
-                if uploaded_garment :
-                    append_imgList(uploaded_garment, category)
+            if uploaded_garment :
+                append_imgList(uploaded_garment, category)
 
-                filenames, selected_upper = show_garments_and_checkboxes(category)
-                if selected_upper :
-                    is_selected_garment = True
-                    files[0] = ('files', category)
-                    files[2] = ('files', f'{selected_upper}.jpg')
+            filenames, selected_lower = show_garments_and_checkboxes(category)
+            if selected_lower :
+                is_selected_lower = True
+                files[3] = ('files', f'{selected_lower}.jpg')
+
 
         with col2:
-            
-            # st.markdown("<div class='custom-column center-column'>", unsafe_allow_html=True) # 중앙 컬럼에 .center-column 클래스 추가
-            # st.markdown("<div class='custom-text'>This is column 2 content.</div>", unsafe_allow_html=True) # 텍스트를 배경색과 함께 출력
-            # st.markdown("</div>", unsafe_allow_html=True)
-
             st.markdown("<h3 class='center-aligned-header'>드레스룸🚪</h3>", unsafe_allow_html=True)
-            # st.markdown("</div>", unsafe_allow_html=True)
-             # is_checked_garment
+
             user_guideline_for_human()
             uploaded_target = st.file_uploader("Choose an target image", type=["jpg", "jpeg", "png"])
             
-            start_button = st.markdown("<div class='center-aligned-button'><button class='custom-button'>옷 입히기 시작</button></div>", unsafe_allow_html=True)
+            # start_button = st.markdown("<div class='center-aligned-button'><button class='custom-button'>옷 입히기 시작</button></div>", unsafe_allow_html=True)
+            start_button = st.button("Show Image", use_container_width=True)
+            # print(st.button("옷 입히기 시작", use_container_width=True))
 
-            if start_button:
-                if  uploaded_target and is_selected_garment : 
-                    gen_start = True
-            
             human_slot = st.empty()
             if uploaded_target:
                 target_bytes = uploaded_target.getvalue()
@@ -269,12 +241,35 @@ def main():
                 human_slot.empty()
                 human_slot.image(target_img, caption='Uploaded target image')
                 
-                files[1] = ('files', (uploaded_target.name, target_bytes,
-                            uploaded_target.type))
             else : 
                 example_img = Image.open('/opt/ml/level3_cv_finalproject-cv-12/backend/app/utils/example.jpg')
                 human_slot.image(example_img, width=300, use_column_width=True, caption='Example of target image')
-            
+
+            print('start_button', start_button)
+            if start_button and uploaded_target:
+                if is_selected_upper and is_selected_lower  : 
+                    gen_start = True
+                    category = 'upper_lower'
+                    
+                elif is_selected_upper : 
+                    print('catogory upperrr')
+                    gen_start = True
+                    category = 'upper_body'
+                elif is_selected_lower : 
+                    gen_start = True
+                    category = 'lower_body'
+                    files[2] = files[3] ## lower가 3index에 저장됨, upper&lower가 아닐 경우엔 2로 저장
+                elif is_selected_dress : 
+                    gen_start = True
+                    category = 'dresses'
+                else : 
+                    gen_start = False
+
+                files[0] = ('files', category)
+                files[1] = ('files', (uploaded_target.name, target_bytes,
+                            uploaded_target.type))
+                print('category', category)
+
             if gen_start : 
                 
                 st.write(' ')
@@ -309,22 +304,6 @@ def main():
                 
                 human_slot.empty()
                 human_slot.image(final_img, caption='Final Image', use_column_width=True)
-
-
-        with col3:  
-            st.markdown("<h3 class='center-aligned-header'>하의👖</h3>", unsafe_allow_html=True)
-            category = 'lower_body'
-            
-            uploaded_garment = st.file_uploader("추가할 하의를 넣어주세요.", type=["jpg", "jpeg", "png"])
-
-            if uploaded_garment :
-                append_imgList(uploaded_garment, category)
-
-            filenames, selected_upper = show_garments_and_checkboxes(category)
-            if selected_upper :
-                is_selected_garment = True
-                files[0] = ('files', category)
-                files[2] = ('files', f'{selected_upper}.jpg')
 
 
 

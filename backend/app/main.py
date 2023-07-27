@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field
 from uuid import UUID, uuid4
 from typing import List, Union, Optional, Dict, Any
 from datetime import datetime
-from app.model import MyEfficientNet, get_model, get_config, predict_from_image_byte
 from PIL import Image
 import io
 
@@ -203,10 +202,7 @@ def inference_ladi(category, db_dir, target_name='target.jpg'):
 
 # post!!
 @app.post("/order", description="주문을 요청합니다")
-async def make_order(
-                     files: List[UploadFile] = File(...),
-                     model: MyEfficientNet = Depends(get_model),
-                     config: Dict[str, Any] = Depends(get_config)):
+async def make_order(files: List[UploadFile] = File(...)):
 
     input_dir = '/opt/ml/user_db/input/'
 
@@ -227,19 +223,33 @@ async def make_order(
     target_image.save(f'{input_dir}/buffer/target/target.jpg')
 
     if category == 'upper_lower': 
-        garment_upper_bytes = await files[2].read()
-        garment_lower_bytes = await files[3].read()
+        # garment_upper_bytes = await files[2].read()
+        # garment_lower_bytes = await files[3].read()
         
-        garment_upper_image = Image.open(io.BytesIO(garment_upper_bytes))
-        garment_upper_image = garment_upper_image.convert("RGB")
-        garment_lower_image = Image.open(io.BytesIO(garment_lower_bytes))
-        garment_lower_image = garment_lower_image.convert("RGB")
+        # garment_upper_image = Image.open(io.BytesIO(garment_upper_bytes))
+        # garment_upper_image = garment_upper_image.convert("RGB")
+        # garment_lower_image = Image.open(io.BytesIO(garment_lower_bytes))
+        # garment_lower_image = garment_lower_image.convert("RGB")
+
+        # # garment_upper_image.save(f'{input_dir}/upper_body.jpg')
+        # garment_upper_image.save(f'{input_dir}/buffer/garment/upper_body.jpg')
+        # # garment_lower_image.save(f'{input_dir}/lower_body.jpg')
+        # garment_lower_image.save(f'{input_dir}/buffer/garment/lower_body.jpg')
 
 
-        # garment_upper_image.save(f'{input_dir}/upper_body.jpg')
-        garment_upper_image.save(f'{input_dir}/buffer/garment/upper_body.jpg')
-        # garment_lower_image.save(f'{input_dir}/lower_body.jpg')
-        garment_lower_image.save(f'{input_dir}/buffer/garment/lower_body.jpg')
+        ## string으로 전송됐을 때(filename)
+        string_upper_bytes = await files[2].read()
+        string_lower_bytes = await files[3].read()
+        string_io_upper = io.BytesIO(string_upper_bytes)
+        string_io_lower = io.BytesIO(string_lower_bytes)
+        filename_upper = string_io_upper.read().decode('utf-8')
+        filename_lower = string_io_lower.read().decode('utf-8')
+
+        garment_image_upper = Image.open(os.path.join(db_dir, 'input/garment', 'upper_body', filename_upper))
+        garment_image_lower = Image.open(os.path.join(db_dir, 'input/garment', 'lower_body', filename_lower))
+        garment_image_upper.save(f'{input_dir}/buffer/garment/upper_body.jpg')
+        garment_image_lower.save(f'{input_dir}/buffer/garment/lower_body.jpg')
+
         
         inference_allModels('upper_body', db_dir)
         shutil.copy(os.path.join(db_dir, 'ladi/buffer', 'upper_body.png'), f'{input_dir}/buffer/target/upper_body.jpg')
@@ -268,13 +278,6 @@ async def make_order(
     ## return값 
     ## output dir
 
-    inference_result = predict_from_image_byte(model=model, image_bytes=image_bytes, config=config)
-    product = InferenceImageProduct(result=inference_result)
-    products.append(product)
-
-    new_order = Order(products=products)
-    orders.append(new_order)
-    return new_order
 
 
 
