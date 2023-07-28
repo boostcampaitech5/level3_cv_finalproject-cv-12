@@ -23,5 +23,5 @@
 
 - Human parsing 정보 이용하여 원본 Style 보존
 
-## 시연 영상 
-<video src="img/demo.mp4" controls title="Title"></video>
+<!-- ## 시연 영상 
+<video src="img/demo.mp4" controls title="Title"></video> -->
