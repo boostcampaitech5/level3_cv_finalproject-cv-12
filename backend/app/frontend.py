@@ -10,9 +10,11 @@ from app.confirm_button_hack import cache_on_button_press
 import base64
 
 # SETTING PAGE CONFIG TO WIDE MODE
-ASSETS_DIR_PATH = os.path.join(Path(__file__).parent.parent.parent.parent, "assets")
-
+ASSETS_DIR_PATH = os.path.join(Path(__file__).parent.parent.parent.parent, "assets")    
 st.set_page_config(layout="wide")
+
+
+# st.set_page_config(layout="wide")
 
 root_password = 'a'
 category_pair = {'Upper':'upper_body', 'Lower':'lower_body', 'Upper & Lower':'upper_lower', 'Dress':'dresses'}
@@ -41,10 +43,12 @@ def user_guideline_for_human():
 
     st.write(' ')
     text1 = """<h6 style=''> 1. 전신 사진을 넣어주세요.  </h6>"""
-    text2 = """<h6 style=''> 2. 아래 예시 사진과 같이, 최대한 사진의 위아래 테두리에 맞게 찍어주세요. </h6>"""
+    text3 = """<h6 style=''> 2. 입을 옷을 선택해주세요. </h6>"""
+    text4 = """<h6 style=''> 3. '옷 입히기 시작' 버튼을 눌러주세요. </h6>"""
     
     st.markdown(text1, unsafe_allow_html=True)
-    st.markdown(text2, unsafe_allow_html=True)
+    st.markdown(text3, unsafe_allow_html=True)
+    st.markdown(text4, unsafe_allow_html=True)
 
 def user_guideline_for_garment():
 
@@ -103,8 +107,11 @@ def show_garments_and_checkboxes(category):
         #     return True, garment_byte
         # else : 
         #     return False, None
-    
-    selected_garment = st.selectbox('입을 옷을 선택해주세요.', [f[:-4] for f in filenames])
+    filenames_ = [None]
+    filenames_.extend([f[:-4] for f in filenames])
+    selected_garment = st.selectbox('입을 옷을 선택해주세요.', filenames_, index=0)
+    print('selected_garment', selected_garment)
+
     return filenames, selected_garment
 
 def md_style():
@@ -176,7 +183,6 @@ def md_style():
         unsafe_allow_html=True
     )
 
-
 def main():
     md_style()
     # st.title("d") #🌳나만의 드레스룸🌳
@@ -185,7 +191,6 @@ def main():
     with st.container():
         col1, col2, col3 = st.columns([1,1,1])
         files = [0, 0, 0, ('files', 0)]
-        is_selected_garment = False
         is_selected_upper = False
         is_selected_lower = False
         is_selected_dress = False
@@ -193,7 +198,6 @@ def main():
 
         with col1:
             st.markdown("<h3 class='center-aligned-header'>상의👚</h3>", unsafe_allow_html=True)
-
             # user_guideline_for_garment()
             category = 'upper_body'
 
@@ -206,9 +210,10 @@ def main():
             if selected_upper :
                 is_selected_upper = True
                 files[2] = ('files', f'{selected_upper}.jpg')
-
+            print('selected_upper', selected_upper)
 
         with col3:  
+            
             st.markdown("<h3 class='center-aligned-header'>하의👖</h3>", unsafe_allow_html=True)
             category = 'lower_body'
             
@@ -222,16 +227,32 @@ def main():
                 is_selected_lower = True
                 files[3] = ('files', f'{selected_lower}.jpg')
 
+            st.write(' ')
+            st.write(' ')
+            st.markdown("<h3 class='center-aligned-header'>드레스👗</h3>", unsafe_allow_html=True)
+            category = 'dresses'
+            
+            uploaded_garment = st.file_uploader("추가할 드레스를 넣어주세요.", type=["jpg", "jpeg", "png"])
+
+            if uploaded_garment :
+                append_imgList(uploaded_garment, category)
+
+            filenames, selected_dress = show_garments_and_checkboxes(category)
+            if selected_dress :
+                is_selected_dress = True
+                files[2] = ('files', f'{selected_dress}.jpg')
+            print('is_selected_lower', is_selected_lower)
+            print('is_selected_dress', is_selected_dress)
+
 
         with col2:
             st.markdown("<h3 class='center-aligned-header'>드레스룸🚪</h3>", unsafe_allow_html=True)
 
+            uploaded_target = st.file_uploader("전신 사진을 넣어주세요.", type=["jpg", "jpeg", "png"])
             user_guideline_for_human()
-            uploaded_target = st.file_uploader("Choose an target image", type=["jpg", "jpeg", "png"])
             
             # start_button = st.markdown("<div class='center-aligned-button'><button class='custom-button'>옷 입히기 시작</button></div>", unsafe_allow_html=True)
-            start_button = st.button("Show Image", use_container_width=True)
-            # print(st.button("옷 입히기 시작", use_container_width=True))
+            start_button = st.button("옷 입히기 시작", use_container_width=True)
 
             human_slot = st.empty()
             if uploaded_target:
@@ -239,11 +260,12 @@ def main():
                 target_img = Image.open(io.BytesIO(target_bytes))
 
                 human_slot.empty()
-                human_slot.image(target_img, caption='Uploaded target image')
+                human_slot.image(target_img)
                 
-            else : 
-                example_img = Image.open('/opt/ml/level3_cv_finalproject-cv-12/backend/app/utils/example.jpg')
-                human_slot.image(example_img, width=300, use_column_width=True, caption='Example of target image')
+            # else : 
+                
+            #     example_img = Image.open('/opt/ml/level3_cv_finalproject-cv-12/backend/app/utils/example.jpg')
+            #     human_slot.image(example_img, width=300, use_column_width=True, caption='Example of target image')
 
             print('start_button', start_button)
             if start_button and uploaded_target:
@@ -269,6 +291,8 @@ def main():
                 files[1] = ('files', (uploaded_target.name, target_bytes,
                             uploaded_target.type))
                 print('category', category)
+                print('files2', files[2])
+                print('files3', files[3])
 
             if gen_start : 
                 
@@ -305,48 +329,9 @@ def main():
                 human_slot.empty()
                 human_slot.image(final_img, caption='Final Image', use_column_width=True)
 
-
-
-        # if is_all_uploaded:
-        #     with col3:  
-        #         st.write(' ')
-        #         empty_slot = st.empty()
-        #         empty_slot.markdown("<h2 style='text-align: center;'>\nLoading...</h2>", unsafe_allow_html=True)
                 
-        #         while check_modelLoading() :
-        #             pass
-
-        #         import time
-        #         t = time.time()
-        #         response = requests.post("http://localhost:8001/order", files=files)
-        #         response.raise_for_status() ## 200이 아니면 예외처리
-        #         print('total processing time: ', time.time() - t)
-                
-        #         empty_slot.empty()
-        #         empty_slot.markdown("<h2 style='text-align: center;'>Here it is !</h2>", unsafe_allow_html=True)
-
-        #         output_ladi_buffer_dir = '/opt/ml/user_db/ladi/buffer'
-        #         final_result_dir = output_ladi_buffer_dir
-        #         if category =='upper_lower':
-        #             final_img = Image.open(os.path.join(final_result_dir, 'lower_body.png'))
-        #         else : 
-        #             final_img = Image.open(os.path.join(final_result_dir, f'{category}.png'))
-                
-        #         st.write(' ')
-        #         st.write(' ')
-        #         st.write(' ')
-        #         st.write(' ')
-        #         st.write(' ')
-        #         st.write(' ')
-        #         st.image(final_img, caption='Final Image', use_column_width=True)
-                
-        #         # option = '선택 안 함'
-        #         # down_btn = st.download_button(
-        #         #     label='Download Image',
-        #         #     data=dehaze_image_bytes,
-        #         #     file_name='dehazed_image.jpg',
-        #         #     mime='image/jpg',
-        #         #     on_click=save_btn_click(option, dehaze_image_bytes)
-        #         # )
+                is_selected_upper = False
+                is_selected_lower = False
+                is_selected_dress = False
 
 main()
