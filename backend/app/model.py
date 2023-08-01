@@ -9,7 +9,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from PIL import Image
-from efficientnet_pytorch import EfficientNet
 
 
 class MyEfficientNet(nn.Module):
