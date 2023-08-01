@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field
 from uuid import UUID, uuid4
 from typing import List, Union, Optional, Dict, Any
 from datetime import datetime
-from app.model import MyEfficientNet, get_model, get_config, predict_from_image_byte
 from PIL import Image
 import io
 
@@ -41,6 +40,39 @@ import shutil
 
 app = FastAPI()
 ladi_models = None
+
+db_dir = '/opt/ml/user_db'
+
+@app.post("/add_data", description="데이터 저장")
+async def add_garment_to_db(files: List[UploadFile] = File(...)):
+    byte_string = await files[0].read() ##await 
+    string_io = io.BytesIO(byte_string) 
+    category = string_io.read().decode('utf-8')
+    
+    print('category in main', category)
+
+    garment_bytes = await files[1].read() ##await
+    garment_name = files[1].filename  
+    print('!!!! garment_name', garment_name)
+    garment_image = Image.open(io.BytesIO(garment_bytes))
+    garment_image = garment_image.convert("RGB")
+    
+    garment_image.save(os.path.join(db_dir, 'input/garment', category, f'{garment_name}'))
+
+def read_image_as_bytes(image_path):
+    with open(image_path, "rb") as file:
+        image_data = file.read()
+    return image_data
+
+@app.get("/get_db/{category}") 
+async def get_DB(category: str) :
+    category_dir = os.path.join(db_dir, 'input/garment', category)
+    garment_db_bytes = {}
+    for filename in os.listdir(category_dir):
+        garment_id = filename[:-4]
+        garment_byte = read_image_as_bytes(os.path.join(category_dir, filename))
+        garment_db_bytes[garment_id] = garment_byte
+    return garment_db_bytes
 
 def load_ladiModels():
     pretrained_model_name_or_path = "stabilityai/stable-diffusion-2-inpainting"
@@ -182,12 +214,8 @@ def inference_ladi(category, db_dir, target_name='target.jpg'):
 
 # post!!
 @app.post("/order", description="주문을 요청합니다")
-async def make_order(
-                     files: List[UploadFile] = File(...),
-                     model: MyEfficientNet = Depends(get_model),
-                     config: Dict[str, Any] = Depends(get_config)):
+async def make_order(files: List[UploadFile] = File(...)):
 
-    db_dir = '/opt/ml/user_db'
     input_dir = '/opt/ml/user_db/input/'
 
     # category : files[0], target:files[1], garment:files[2]
@@ -203,23 +231,37 @@ async def make_order(
 
     os.makedirs(f'{input_dir}/buffer', exist_ok=True)
 
-    target_image.save(f'{input_dir}/target.jpg')
+    # target_image.save(f'{input_dir}/target.jpg')
     target_image.save(f'{input_dir}/buffer/target/target.jpg')
 
     if category == 'upper_lower': 
-        garment_upper_bytes = await files[2].read()
-        garment_lower_bytes = await files[3].read()
+        # garment_upper_bytes = await files[2].read()
+        # garment_lower_bytes = await files[3].read()
         
-        garment_upper_image = Image.open(io.BytesIO(garment_upper_bytes))
-        garment_upper_image = garment_upper_image.convert("RGB")
-        garment_lower_image = Image.open(io.BytesIO(garment_lower_bytes))
-        garment_lower_image = garment_lower_image.convert("RGB")
+        # garment_upper_image = Image.open(io.BytesIO(garment_upper_bytes))
+        # garment_upper_image = garment_upper_image.convert("RGB")
+        # garment_lower_image = Image.open(io.BytesIO(garment_lower_bytes))
+        # garment_lower_image = garment_lower_image.convert("RGB")
+
+        # # garment_upper_image.save(f'{input_dir}/upper_body.jpg')
+        # garment_upper_image.save(f'{input_dir}/buffer/garment/upper_body.jpg')
+        # # garment_lower_image.save(f'{input_dir}/lower_body.jpg')
+        # garment_lower_image.save(f'{input_dir}/buffer/garment/lower_body.jpg')
 
 
-        garment_upper_image.save(f'{input_dir}/upper_body.jpg')
-        garment_upper_image.save(f'{input_dir}/buffer/garment/upper_body.jpg')
-        garment_lower_image.save(f'{input_dir}/lower_body.jpg')
-        garment_lower_image.save(f'{input_dir}/buffer/garment/lower_body.jpg')
+        ## string으로 전송됐을 때(filename)
+        string_upper_bytes = await files[2].read()
+        string_lower_bytes = await files[3].read()
+        string_io_upper = io.BytesIO(string_upper_bytes)
+        string_io_lower = io.BytesIO(string_lower_bytes)
+        filename_upper = string_io_upper.read().decode('utf-8')
+        filename_lower = string_io_lower.read().decode('utf-8')
+
+        garment_image_upper = Image.open(os.path.join(db_dir, 'input/garment', 'upper_body', filename_upper))
+        garment_image_lower = Image.open(os.path.join(db_dir, 'input/garment', 'lower_body', filename_lower))
+        garment_image_upper.save(f'{input_dir}/buffer/garment/upper_body.jpg')
+        garment_image_lower.save(f'{input_dir}/buffer/garment/lower_body.jpg')
+
         
         inference_allModels('upper_body', db_dir)
         shutil.copy(os.path.join(db_dir, 'ladi/buffer', 'upper_body.png'), f'{input_dir}/buffer/target/upper_body.jpg')
@@ -227,13 +269,20 @@ async def make_order(
 
 
     else : 
-        garment_bytes = await files[2].read()
+        ## file로 전송됐을 때
+        # garment_bytes = await files[2].read()
+        # garment_image = Image.open(io.BytesIO(garment_bytes))
+        # garment_image = garment_image.convert("RGB")
+        # garment_image.save(f'{input_dir}/buffer/garment/{category}.jpg')
 
-        garment_image = Image.open(io.BytesIO(garment_bytes))
-        garment_image = garment_image.convert("RGB")
+        ## string으로 전송됐을 때(filename)
+        byte_string = await files[2].read()
+        string_io = io.BytesIO(byte_string)
+        filename = string_io.read().decode('utf-8')
 
-        garment_image.save(f'{input_dir}/{category}.jpg')
+        garment_image = Image.open(os.path.join(db_dir, 'input/garment', category, filename))
         garment_image.save(f'{input_dir}/buffer/garment/{category}.jpg')
+
 
         inference_allModels(category, db_dir)
 
@@ -241,13 +290,7 @@ async def make_order(
     ## return값 
     ## output dir
 
-    inference_result = predict_from_image_byte(model=model, image_bytes=image_bytes, config=config)
-    product = InferenceImageProduct(result=inference_result)
-    products.append(product)
 
-    new_order = Order(products=products)
-    orders.append(new_order)
-    return new_order
 
 
 def update_order_by_id(order_id: UUID, order_update: OrderUpdate) -> Optional[Order]:
