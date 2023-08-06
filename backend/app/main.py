@@ -124,56 +124,6 @@ async def get_boolean():
     global is_modelLoading
     return {"is_modelLoading": is_modelLoading}
 
-@app.get("/")
-def hello_world():
-    return {"hello": "world"}
-
-class Product(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
-    name: str
-    price: float
-    result: Optional[List]
-
-class Order(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
-    products: List[Product] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
-
-    @property
-    def bill(self):
-        return sum([product.price for product in self.products])
-
-    def add_product(self, product: Product):
-        if product.id in [existing_product.id for existing_product in self.products]:
-            return self
-
-        self.products.append(product)
-        self.updated_at = datetime.now()
-        return self
-    
-class OrderUpdate(BaseModel):
-    products: List[Product] = Field(default_factory=list)
-    
-class InferenceImageProduct(Product):
-    name: str = "inference_image_product"
-    price: float = 100.0
-    result: Optional[List]
-    
-@app.get("/order", description="주문 리스트를 가져옵니다")
-async def get_orders() -> List[Order]:
-    return orders
-
-@app.get("/order/{order_id}", description="Order 정보를 가져옵니다")
-async def get_order(order_id: UUID) -> Union[Order, dict]:
-    order = get_order_by_id(order_id=order_id)
-    if not order:
-        return {"message": "주문 정보를 찾을 수 없습니다"}
-    return order
-
-def get_order_by_id(order_id: UUID) -> Optional[Order]:
-    return next((order for order in orders if order.id == order_id), None)
-
 def inference_allModels(category, db_dir):
     
     input_dir = os.path.join(db_dir, 'input')
@@ -287,46 +237,4 @@ async def make_order(files: List[UploadFile] = File(...)):
         inference_allModels(category, db_dir)
 
     return None
-    ## return값 
-    ## output dir
 
-
-
-
-def update_order_by_id(order_id: UUID, order_update: OrderUpdate) -> Optional[Order]:
-    """
-    Order를 업데이트 합니다
-
-    Args:
-        order_id (UUID): order id
-        order_update (OrderUpdate): Order Update DTO
-
-    Returns:
-        Optional[Order]: 업데이트 된 Order 또는 None
-    """
-    existing_order = get_order_by_id(order_id=order_id)
-    if not existing_order:
-        return
-
-    updated_order = existing_order.copy()
-    for next_product in order_update.products:
-        updated_order = existing_order.add_product(next_product)
-
-    return updated_order
-
-
-@app.patch("/order/{order_id}", description="주문을 수정합니다")
-async def update_order(order_id: UUID, order_update: OrderUpdate):
-    updated_order = update_order_by_id(order_id=order_id, order_update=order_update)
-
-    if not updated_order:
-        return {"message": "주문 정보를 찾을 수 없습니다"}
-    return updated_order
-
-
-@app.get("/bill/{order_id}", description="계산을 요청합니다")
-async def get_bill(order_id: UUID):
-    found_order = get_order_by_id(order_id=order_id)
-    if not found_order:
-        return {"message": "주문 정보를 찾을 수 없습니다"}
-    return found_order.bill
