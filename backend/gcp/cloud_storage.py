@@ -37,20 +37,36 @@ class GCSUploader:
         return user_url
 
     # Uploads image to GCS and returns the URL
-    def save_image_to_gcs(self, urls: list) -> str:
-        image_urls = []
-        for i, (byte_arr, url_name) in enumerate(urls):
-            url = self.upload_blob(byte_arr, url_name)
-            image_urls.append(url)
+    # def save_image_to_gcs(self, urls: list) -> str:
+    #     image_urls = []
+    #     for i, (byte_arr, url_name) in enumerate(urls):
+    #         url = self.upload_blob(byte_arr, url_name)
+    #         image_urls.append(url)
 
-        return image_urls
+    #     return image_urls
     
     def list_images_in_folder(self, folder_name):
         bucket = self.client.get_bucket(self.bucket_name)
         blobs = bucket.list_blobs(prefix=folder_name)
 
-        image_names = [blob.name for blob in blobs if blob.name.lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))]
+        image_names = [blob.name.split("/")[-1] for blob in blobs if blob.name.lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))]
+
         return image_names
+    
+    def read_image_from_gcs(self, blob_name):
+        bucket = self.client.get_bucket(self.bucket_name)
+        blob = bucket.get_blob(blob_name)
+
+        if blob is None:
+            print(f"Blob '{blob_name}' not found in bucket '{self.bucket_name}'.")
+            return None
+
+        image_data = blob.download_as_bytes()
+        from PIL import Image
+        from io import BytesIO
+
+        
+        return Image.open(BytesIO(image_data))
 
 def load_gcp_config_from_yaml(yaml_path):
     with open(yaml_path, 'r') as yaml_file:

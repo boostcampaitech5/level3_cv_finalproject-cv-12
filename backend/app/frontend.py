@@ -6,7 +6,7 @@ import requests
 from PIL import Image
 
 import streamlit as st
-import base64
+import socket
 
 sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/backend/gcp')
 from cloud_storage import GCSUploader, load_gcp_config_from_yaml
@@ -89,8 +89,9 @@ def show_garments_and_checkboxes(category):
     cols = st.columns(num_columns)
     for i, filename in enumerate(filenames):
         im_dir = os.path.join(category_dir, filename)
-        garment_img = Image.open(im_dir)
-        garment_byte = read_image_as_bytes(im_dir)
+        # garment_img = Image.open(im_dir)
+        # garment_byte = read_image_as_bytes(im_dir)
+        garment_img = gcs_uploader.read_image_from_gcs(im_dir)
         # st.image(garment_img, caption=filename[:-4], width=100)
         cols[i % num_columns].image(garment_img, width=100, use_column_width=True, caption=filename[:-4])
         # if st.checkbox(filename[:-4]) :

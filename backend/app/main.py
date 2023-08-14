@@ -34,14 +34,19 @@ from diffusers.utils.import_utils import is_xformers_available
 from tqdm import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer, CLIPVisionModelWithProjection, AutoProcessor
 from models.AutoencoderKL import AutoencoderKL
-
 import shutil
 
+sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/backend/gcp')
+from cloud_storage import GCSUploader, load_gcp_config_from_yaml
 
 app = FastAPI()
 ladi_models = None
 
 db_dir = '/opt/ml/user_db'
+
+gcp_config = load_gcp_config_from_yaml("/opt/ml/level3_cv_finalproject-cv-12/backend/config/gcs.yaml")
+gcs_uploader = GCSUploader(gcp_config)
+user_name = 'hi'
 
 @app.post("/add_data", description="데이터 저장")
 async def add_garment_to_db(files: List[UploadFile] = File(...)):
@@ -57,7 +62,8 @@ async def add_garment_to_db(files: List[UploadFile] = File(...)):
     garment_image = Image.open(io.BytesIO(garment_bytes))
     garment_image = garment_image.convert("RGB")
     
-    garment_image.save(os.path.join(db_dir, 'input/garment', category, f'{garment_name}'))
+    gcs_uploader.upload_blob(garment_bytes, os.path.join(user_name, 'input/garment', category, f'{garment_name}'))
+    # garment_image.save(os.path.join(db_dir, 'input/garment', category, f'{garment_name}'))
 
 def read_image_as_bytes(image_path):
     with open(image_path, "rb") as file:
@@ -233,8 +239,6 @@ async def make_order(files: List[UploadFile] = File(...)):
         garment_image = Image.open(os.path.join(db_dir, 'input/garment', category, filename))
         garment_image.save(f'{input_dir}/buffer/garment/{category}.jpg')
 
-
         inference_allModels(category, db_dir)
 
     return None
-
