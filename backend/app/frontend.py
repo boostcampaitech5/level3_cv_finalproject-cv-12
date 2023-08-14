@@ -1,4 +1,4 @@
-import io
+import io, sys
 import os
 from pathlib import Path
 
@@ -6,38 +6,24 @@ import requests
 from PIL import Image
 
 import streamlit as st
-from app.confirm_button_hack import cache_on_button_press
 import base64
+
+sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/backend/gcp')
+from cloud_storage import GCSUploader, load_gcp_config_from_yaml
 
 # SETTING PAGE CONFIG TO WIDE MODE
 ASSETS_DIR_PATH = os.path.join(Path(__file__).parent.parent.parent.parent, "assets")    
 st.set_page_config(layout="wide")
-
-
-# st.set_page_config(layout="wide")
 
 root_password = 'a'
 category_pair = {'Upper':'upper_body', 'Lower':'lower_body', 'Upper & Lower':'upper_lower', 'Dress':'dresses'}
 
 db_dir = '/opt/ml/user_db'
 
-def apply_custom_font(text, font_size=48):
-    # 글꼴 로드
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    parent_dir = os.path.dirname(current_dir)
-    font_filename = 'NanumSquareB.ttf'
-    font_path = os.path.join(parent_dir, "assets", font_filename)
+gcp_config = load_gcp_config_from_yaml("/opt/ml/level3_cv_finalproject-cv-12/backend/config/gcs.yaml")
+gcs_uploader = GCSUploader(gcp_config)
 
-    try:
-        with open(font_path, "rb") as f:
-            font_data = f.read()
-        font_base64 = base64.b64encode(font_data).decode("utf-8")
-        font_style = f"font-family: 'CustomFont' ; font-size: {font_size}px;"
-        styled_text = f'<div style="{font_style}";>{text}</div>'
-        return f'<style>@font-face {{font-family: "CustomFont"; src: url(data:font/ttf;base64,{font_base64})}}</style>{styled_text}'
-    except Exception as e:
-        st.error(f"Error loading the font: {e}")
-        return None
+user_name = 'hi'
 
 def user_guideline_for_human():
 
@@ -88,9 +74,13 @@ def append_imgList(uploaded_garment, category):
 
 ## 저장된 이미지 리스트들을 체크박스와 함께 띄우는 함수 
 def show_garments_and_checkboxes(category):
+    
+    category_dir = os.path.join(user_name, 'input/garment', category)
+    filenames = gcs_uploader.list_images_in_folder(category_dir)
+    # filenames = os.listdir(category_dir)
 
-    category_dir = os.path.join(db_dir, 'input/garment', category)
-    filenames = os.listdir(category_dir)
+    # category_dir = os.path.join(db_dir, 'input/garment', category)
+    # filenames = os.listdir(category_dir)
     
     num_columns = 3 
     num_rows = (len(filenames) - 1) // num_columns + 1
@@ -109,7 +99,7 @@ def show_garments_and_checkboxes(category):
         #     return False, None
     filenames_ = [None]
     filenames_.extend([f[:-4] for f in filenames])
-    selected_garment = st.selectbox('입을 옷을 선택해주세요.', filenames_, index=0)
+    selected_garment = st.selectbox('입을 옷을 선택해주세요.', filenames_, index=0, key=category)
     print('selected_garment', selected_garment)
 
     return filenames, selected_garment
@@ -185,7 +175,6 @@ def md_style():
 
 def main():
     md_style()
-    # st.title("d") #🌳나만의 드레스룸🌳
     st.markdown("<h1 class='center-aligned-title'>🌳나만의 드레스룸🌳</h1>", unsafe_allow_html=True)
 
     with st.container():
