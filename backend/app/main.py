@@ -10,7 +10,7 @@ import io
 # scp setting
 import sys, os
 sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/Self_Correction_Human_Parsing/')
-from simple_extractor import main_schp
+from simple_extractor import main_schp, main_schp_from_image_byte
 
 # openpose
 sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/pytorch_openpose/')
@@ -45,7 +45,7 @@ ladi_models = None
 db_dir = '/opt/ml/user_db'
 
 gcp_config = load_gcp_config_from_yaml("/opt/ml/level3_cv_finalproject-cv-12/backend/config/gcs.yaml")
-gcs_uploader = GCSUploader(gcp_config)
+gcs = GCSUploader(gcp_config)
 user_name = 'hi'
 
 @app.post("/add_data", description="데이터 저장")
@@ -62,7 +62,7 @@ async def add_garment_to_db(files: List[UploadFile] = File(...)):
     garment_image = Image.open(io.BytesIO(garment_bytes))
     garment_image = garment_image.convert("RGB")
     
-    gcs_uploader.upload_blob(garment_bytes, os.path.join(user_name, 'input/garment', category, f'{garment_name}'))
+    gcs.upload_blob(garment_bytes, os.path.join(user_name, 'input/garment', category, f'{garment_name}'))
     # garment_image.save(os.path.join(db_dir, 'input/garment', category, f'{garment_name}'))
 
 def read_image_as_bytes(image_path):
@@ -130,13 +130,16 @@ async def get_boolean():
     global is_modelLoading
     return {"is_modelLoading": is_modelLoading}
 
-def inference_allModels(category, db_dir):
+def inference_allModels(target_bytes, garment_bytes, category, db_dir):
     
     input_dir = os.path.join(db_dir, 'input')
     # schp  - (1024, 784), (512, 384)
     target_buffer_dir = os.path.join(input_dir, 'buffer/target')
-    main_schp(target_buffer_dir)
- 
+    # main_schp(target_buffer_dir)
+    schp_img = main_schp_from_image_byte(target_bytes)
+    schp_img.save('./schp.png')
+    
+    exit()
     # openpose 
     output_openpose_buffer_dir = os.path.join(db_dir, 'openpose/buffer')
     os.makedirs(output_openpose_buffer_dir, exist_ok=True)
@@ -172,7 +175,8 @@ def inference_ladi(category, db_dir, target_name='target.jpg'):
 @app.post("/order", description="주문을 요청합니다")
 async def make_order(files: List[UploadFile] = File(...)):
 
-    input_dir = '/opt/ml/user_db/input/'
+    # input_dir = '/opt/ml/user_db/input/'
+    input_dir = f'{user_name}/input'
 
     # category : files[0], target:files[1], garment:files[2]
     byte_string = await files[0].read()
@@ -186,9 +190,9 @@ async def make_order(files: List[UploadFile] = File(...)):
     target_image = target_image.convert("RGB")
 
     os.makedirs(f'{input_dir}/buffer', exist_ok=True)
+    # target_image.save(f'{input_dir}/buffer/target/target.jpg')
 
-    # target_image.save(f'{input_dir}/target.jpg')
-    target_image.save(f'{input_dir}/buffer/target/target.jpg')
+    gcs.upload_blob(target_bytes, f'{input_dir}/buffer/target/target.jpg')
 
     if category == 'upper_lower': 
         # garment_upper_bytes = await files[2].read()
@@ -226,19 +230,21 @@ async def make_order(files: List[UploadFile] = File(...)):
 
     else : 
         ## file로 전송됐을 때
-        # garment_bytes = await files[2].read()
-        # garment_image = Image.open(io.BytesIO(garment_bytes))
-        # garment_image = garment_image.convert("RGB")
-        # garment_image.save(f'{input_dir}/buffer/garment/{category}.jpg')
+
+        garment_bytes = await files[2].read()
+        garment_image = Image.open(io.BytesIO(garment_bytes))
+        garment_image = garment_image.convert("RGB")
 
         ## string으로 전송됐을 때(filename)
-        byte_string = await files[2].read()
-        string_io = io.BytesIO(byte_string)
-        filename = string_io.read().decode('utf-8')
+        # byte_string = await files[2].read()
+        # string_io = io.BytesIO(byte_string)
+        # filename = string_io.read().decode('utf-8')
 
-        garment_image = Image.open(os.path.join(db_dir, 'input/garment', category, filename))
-        garment_image.save(f'{input_dir}/buffer/garment/{category}.jpg')
+        # garment_image = Image.open(os.path.join(db_dir, 'input/garment', category, filename))
+        # garment_image.save(f'{input_dir}/buffer/garment/{category}.jpg')
 
-        inference_allModels(category, db_dir)
+        gcs.upload_blob(garment_bytes, f'{input_dir}/buffer/garment/{category}.jpg')
+
+        inference_allModels(target_bytes, garment_bytes, category, user_name)
 
     return None

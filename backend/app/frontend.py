@@ -15,13 +15,12 @@ from cloud_storage import GCSUploader, load_gcp_config_from_yaml
 ASSETS_DIR_PATH = os.path.join(Path(__file__).parent.parent.parent.parent, "assets")    
 st.set_page_config(layout="wide")
 
-root_password = 'a'
 category_pair = {'Upper':'upper_body', 'Lower':'lower_body', 'Upper & Lower':'upper_lower', 'Dress':'dresses'}
 
 db_dir = '/opt/ml/user_db'
 
 gcp_config = load_gcp_config_from_yaml("/opt/ml/level3_cv_finalproject-cv-12/backend/config/gcs.yaml")
-gcs_uploader = GCSUploader(gcp_config)
+gcs = GCSUploader(gcp_config)
 
 user_name = 'hi'
 
@@ -76,7 +75,7 @@ def append_imgList(uploaded_garment, category):
 def show_garments_and_checkboxes(category):
     
     category_dir = os.path.join(user_name, 'input/garment', category)
-    filenames = gcs_uploader.list_images_in_folder(category_dir)
+    filenames = gcs.list_images_in_folder(category_dir)
     # filenames = os.listdir(category_dir)
 
     # category_dir = os.path.join(db_dir, 'input/garment', category)
@@ -91,8 +90,12 @@ def show_garments_and_checkboxes(category):
         im_dir = os.path.join(category_dir, filename)
         # garment_img = Image.open(im_dir)
         # garment_byte = read_image_as_bytes(im_dir)
-        garment_img = gcs_uploader.read_image_from_gcs(im_dir)
+        garment_img = gcs.read_image_from_gcs(im_dir)
         # st.image(garment_img, caption=filename[:-4], width=100)
+        
+        from PIL import Image
+        from io import BytesIO
+        garment_img = Image.open(BytesIO(garment_img))
         cols[i % num_columns].image(garment_img, width=100, use_column_width=True, caption=filename[:-4])
         # if st.checkbox(filename[:-4]) :
         #     return True, garment_byte
@@ -102,8 +105,11 @@ def show_garments_and_checkboxes(category):
     filenames_.extend([f[:-4] for f in filenames])
     selected_garment = st.selectbox('입을 옷을 선택해주세요.', filenames_, index=0, key=category)
     print('selected_garment', selected_garment)
+    
+    im_dir = os.path.join(category_dir, f'{selected_garment}.jpg')
+    garment_byte = gcs.read_image_from_gcs(im_dir)
 
-    return filenames, selected_garment
+    return garment_byte, selected_garment
 
 def md_style():
     st.markdown(
@@ -196,10 +202,11 @@ def main():
             if uploaded_garment :
                 append_imgList(uploaded_garment, category)
 
-            filenames, selected_upper = show_garments_and_checkboxes(category)
+            selected_byte, selected_upper = show_garments_and_checkboxes(category)
             if selected_upper :
                 is_selected_upper = True
-                files[2] = ('files', f'{selected_upper}.jpg')
+                # files[2] = ('files', f'{selected_upper}.jpg')
+                files[2] = ('files', selected_byte)
             print('selected_upper', selected_upper)
 
         with col3:  
@@ -212,7 +219,7 @@ def main():
             if uploaded_garment :
                 append_imgList(uploaded_garment, category)
 
-            filenames, selected_lower = show_garments_and_checkboxes(category)
+            selected_byte, selected_lower = show_garments_and_checkboxes(category)
             if selected_lower :
                 is_selected_lower = True
                 files[3] = ('files', f'{selected_lower}.jpg')
@@ -264,7 +271,6 @@ def main():
                     category = 'upper_lower'
                     
                 elif is_selected_upper : 
-                    print('catogory upperrr')
                     gen_start = True
                     category = 'upper_body'
                 elif is_selected_lower : 
@@ -280,9 +286,6 @@ def main():
                 files[0] = ('files', category)
                 files[1] = ('files', (uploaded_target.name, target_bytes,
                             uploaded_target.type))
-                print('category', category)
-                print('files2', files[2])
-                print('files3', files[3])
 
             if gen_start : 
                 

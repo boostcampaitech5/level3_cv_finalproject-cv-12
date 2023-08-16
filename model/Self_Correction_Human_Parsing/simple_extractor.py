@@ -23,7 +23,7 @@ import torchvision.transforms as transforms
 
 import networks
 from utils.transforms import transform_logits
-from datasets.simple_extractor_dataset import SimpleFolderDataset
+from datasets.simple_extractor_dataset import SimpleFolderDataset, SimpleImageData
 
 dataset_settings = {
     'lip': {
@@ -86,6 +86,33 @@ def get_palette(num_cls):
             i += 1
             lab >>= 3
     return palette
+
+def get_metaData(image, input_size):
+    
+    img = image
+    h, w, _ = img.shape
+
+    # Get person center and scale
+    person_center, s = self._box2cs([0, 0, w - 1, h - 1])
+    r = 0
+    
+    from utils.transforms import get_affine_transform
+    trans = get_affine_transform(person_center, s, r, input_size)
+    input = cv2.warpAffine(
+        img,
+        trans,
+        (int(input_size[1]), int(input_size[0])),
+        flags=cv2.INTER_LINEAR,
+        borderMode=cv2.BORDER_CONSTANT,
+        borderValue=(0, 0, 0))
+
+    meta = {
+        'center': person_center,
+        'height': h,
+        'width': w,
+        'scale': s,
+        'rotation': r
+    }
 
 
 def main_schp(target_buffer_dir):
@@ -152,6 +179,67 @@ def main_schp(target_buffer_dir):
                 np.save(logits_result_path, logits_result)
     return
 
+def main_schp_from_image_byte(image_byte, dataset='atr'):
+    args = get_arguments()
+    
+    gpus = [int(i) for i in args.gpu.split(',')]
+    assert len(gpus) == 1
+    if not args.gpu == 'None':
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+
+    num_classes = dataset_settings[args.dataset]['num_classes']
+    input_size = dataset_settings[args.dataset]['input_size']
+    label = dataset_settings[args.dataset]['label']
+    print("Evaluating total class number {} with {}".format(num_classes, label))
+
+    model = networks.init_model('resnet101', num_classes=num_classes, pretrained=None)
+
+    state_dict = torch.load(args.model_restore)['state_dict']
+    from collections import OrderedDict
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        name = k[7:]  # remove `module.`
+        new_state_dict[name] = v
+    model.load_state_dict(new_state_dict)
+    model.cuda()
+    model.eval()
+
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.406, 0.456, 0.485], std=[0.225, 0.224, 0.229])
+    ])
+    dataset = SimpleImageData(img_byte=image_byte, input_size=input_size, transform=transform)
+    dataloader = DataLoader(dataset)
+
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
+
+    palette = get_palette(num_classes)
+    with torch.no_grad():
+        for idx, batch in enumerate(tqdm(dataloader)):
+            image, meta = batch
+            img_name = meta['name'][0]
+            c = meta['center'].numpy()[0]
+            s = meta['scale'].numpy()[0]
+            w = meta['width'].numpy()[0]
+            h = meta['height'].numpy()[0]
+
+            output = model(image.cuda())
+            upsample = torch.nn.Upsample(size=input_size, mode='bilinear', align_corners=True)
+            upsample_output = upsample(output[0][-1][0].unsqueeze(0))
+            upsample_output = upsample_output.squeeze()
+            upsample_output = upsample_output.permute(1, 2, 0)  # CHW -> HWC
+
+            logits_result = transform_logits(upsample_output.data.cpu().numpy(), c, s, w, h, input_size=input_size)
+            parsing_result = np.argmax(logits_result, axis=2)
+            parsing_result_path = os.path.join(args.output_dir, img_name[:-4] + '.png')
+            output_img = Image.fromarray(np.asarray(parsing_result, dtype=np.uint8))
+            output_img.putpalette(palette)
+            output_img.save(parsing_result_path)
+            if args.logits:
+                logits_result_path = os.path.join(args.output_dir, img_name[:-4] + '.npy')
+                np.save(logits_result_path, logits_result)
+    return output_img
 
 # if __name__ == '__main__':
 #     main(target_buffer_dir)
