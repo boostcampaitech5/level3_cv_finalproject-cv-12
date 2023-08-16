@@ -8,6 +8,7 @@ from google.oauth2 import service_account
 
 # datetime
 from datetime import datetime, timedelta
+import json
 
 
 class GCSUploader:
@@ -35,15 +36,13 @@ class GCSUploader:
         print(f"File uploaded to {destination_blob_name}.")
 
         return user_url
+    
+    def upload_dict_as_json_to_gcs(self, data_dict, blob_name):
+        bucket = self.client.get_bucket(self.bucket_name)
+        blob = bucket.blob(blob_name)
 
-    # Uploads image to GCS and returns the URL
-    # def save_image_to_gcs(self, urls: list) -> str:
-    #     image_urls = []
-    #     for i, (byte_arr, url_name) in enumerate(urls):
-    #         url = self.upload_blob(byte_arr, url_name)
-    #         image_urls.append(url)
-
-    #     return image_urls
+        json_data = json.dumps(data_dict)
+        blob.upload_from_string(json_data, content_type='application/json')
     
     def list_images_in_folder(self, folder_name):
         bucket = self.client.get_bucket(self.bucket_name)
@@ -62,11 +61,8 @@ class GCSUploader:
             return None
 
         image_data = blob.download_as_bytes()
-        from PIL import Image
-        from io import BytesIO
 
-        
-        return Image.open(BytesIO(image_data))
+        return image_data
 
 def load_gcp_config_from_yaml(yaml_path):
     with open(yaml_path, 'r') as yaml_file:

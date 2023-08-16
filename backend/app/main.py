@@ -10,18 +10,18 @@ import io
 # scp setting
 import sys, os
 sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/Self_Correction_Human_Parsing/')
-from simple_extractor import main_schp, main_schp_from_image_byte
+from simple_extractor import main_schp, main_schp_fromImageByte
 
 # openpose
 sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/pytorch_openpose/')
-from extract_keypoint import main_openpose
+from extract_keypoint import main_openpose, main_openpose_fromImageByte
 
 # ladi
 sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton')
 sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton/src')
 sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton/src/utils')
 
-from get_clothing_mask import main_mask
+from get_clothing_mask import main_mask, main_mask_fromImageByte
 
 from inference import main_ladi
 from face_cut_and_paste import main_cut_and_paste
@@ -136,21 +136,29 @@ def inference_allModels(target_bytes, garment_bytes, category, db_dir):
     # schp  - (1024, 784), (512, 384)
     target_buffer_dir = os.path.join(input_dir, 'buffer/target')
     # main_schp(target_buffer_dir)
-    schp_img = main_schp_from_image_byte(target_bytes)
+    schp_img = main_schp_fromImageByte(target_bytes)
     schp_img.save('./schp.png')
     
-    exit()
     # openpose 
     output_openpose_buffer_dir = os.path.join(db_dir, 'openpose/buffer')
     os.makedirs(output_openpose_buffer_dir, exist_ok=True)
-    main_openpose(target_buffer_dir, output_openpose_buffer_dir)
+    # main_openpose(target_buffer_dir, output_openpose_buffer_dir)
+    keypoint_dict = main_openpose_fromImageByte(target_bytes)
+    gcs.upload_dict_as_json_to_gcs(keypoint_dict, os.path.join(db_dir, 'openpose/buffer/target.json'))
+
     # /opt/ml/user_db/mask/buffer
     # mask 
     garment_dir = os.path.join(input_dir, 'buffer/garment')
     output_mask_dir = os.path.join(db_dir, 'mask/buffer')
     os.makedirs(output_mask_dir, exist_ok=True)
-    main_mask(category, garment_dir, output_mask_dir) 
+    # main_mask(category, garment_dir, output_mask_dir) 
 
+    ## garment_mask 형식 - Image
+    garment_mask = main_mask_fromImageByte(garment_bytes) 
+
+    garment_mask.save('./garment_mask.jpg')
+
+    exit()
     # ladi-vton 
     output_ladi_buffer_dir = os.path.join(db_dir, 'ladi/buffer')
     os.makedirs(output_ladi_buffer_dir, exist_ok=True)
