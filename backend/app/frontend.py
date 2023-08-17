@@ -56,10 +56,6 @@ def check_modelLoading():
         pass
     return is_modelLoading
 
-def read_image_as_bytes(image_path):
-    with open(image_path, "rb") as file:
-        image_data = file.read()
-    return image_data
 ## 이미지 리스트에 저장
 def append_imgList(uploaded_garment, category):
 
@@ -89,7 +85,6 @@ def show_garments_and_checkboxes(category):
     for i, filename in enumerate(filenames):
         im_dir = os.path.join(category_dir, filename)
         # garment_img = Image.open(im_dir)
-        # garment_byte = read_image_as_bytes(im_dir)
         garment_img = gcs.read_image_from_gcs(im_dir)
         # st.image(garment_img, caption=filename[:-4], width=100)
         
@@ -104,7 +99,6 @@ def show_garments_and_checkboxes(category):
     filenames_ = [None]
     filenames_.extend([f[:-4] for f in filenames])
     selected_garment = st.selectbox('입을 옷을 선택해주세요.', filenames_, index=0, key=category)
-    print('selected_garment', selected_garment)
     
     im_dir = os.path.join(category_dir, f'{selected_garment}.jpg')
     garment_byte = gcs.read_image_from_gcs(im_dir)
@@ -205,7 +199,6 @@ def main():
             selected_byte, selected_upper = show_garments_and_checkboxes(category)
             if selected_upper :
                 is_selected_upper = True
-                # files[2] = ('files', f'{selected_upper}.jpg')
                 files[2] = ('files', selected_byte)
             print('selected_upper', selected_upper)
 
@@ -222,25 +215,21 @@ def main():
             selected_byte, selected_lower = show_garments_and_checkboxes(category)
             if selected_lower :
                 is_selected_lower = True
-                files[3] = ('files', f'{selected_lower}.jpg')
+                files[3] = ('files', selected_byte)
 
             st.write(' ')
             st.write(' ')
             st.markdown("<h3 class='center-aligned-header'>드레스👗</h3>", unsafe_allow_html=True)
             category = 'dresses'
-            
             uploaded_garment = st.file_uploader("추가할 드레스를 넣어주세요.", type=["jpg", "jpeg", "png"])
 
             if uploaded_garment :
                 append_imgList(uploaded_garment, category)
 
-            filenames, selected_dress = show_garments_and_checkboxes(category)
+            selected_byte, selected_dress = show_garments_and_checkboxes(category)
             if selected_dress :
                 is_selected_dress = True
-                files[2] = ('files', f'{selected_dress}.jpg')
-            print('is_selected_lower', is_selected_lower)
-            print('is_selected_dress', is_selected_dress)
-
+                files[2] = ('files', selected_byte)
 
         with col2:
             st.markdown("<h3 class='center-aligned-header'>드레스룸🚪</h3>", unsafe_allow_html=True)
@@ -259,11 +248,6 @@ def main():
                 human_slot.empty()
                 human_slot.image(target_img)
                 
-            # else : 
-                
-            #     example_img = Image.open('/opt/ml/level3_cv_finalproject-cv-12/backend/app/utils/example.jpg')
-            #     human_slot.image(example_img, width=300, use_column_width=True, caption='Example of target image')
-
             print('start_button', start_button)
             if start_button and uploaded_target:
                 if is_selected_upper and is_selected_lower  : 
@@ -305,13 +289,7 @@ def main():
                 empty_slot.empty()
                 empty_slot.markdown("<h2 style='text-align: center;'>Here it is !</h2>", unsafe_allow_html=True)
 
-                output_ladi_buffer_dir = '/opt/ml/user_db/ladi/buffer'
-                final_result_dir = output_ladi_buffer_dir
-                if category =='upper_lower':
-                    final_img = Image.open(os.path.join(final_result_dir, 'lower_body.png'))
-                else : 
-                    # final_img = Image.open(os.path.join(final_result_dir, f'{category}.png'))
-                    final_img = response.content
+                final_img = response.content
                 
                 st.write(' ')
                 st.write(' ')
