@@ -25,6 +25,7 @@ label_map={
 from PIL import Image, ImageDraw, ImageOps
 import PIL
 import os
+import io
 # /opt/ml/user_db/schp/buffer/target.png
 import numpy as np
 
@@ -32,9 +33,8 @@ import matplotlib.pyplot as plt
 from time import time
 
 
-def main_cut_and_paste(category, db_dir, target_name='target.jpg'):
+def main_cut_and_paste(category, target_bytes, finalResult_img, schp_img, target_name='target.jpg'):
 
-    dataroot = db_dir
     im_name = target_name
     generative_name = 'lower_body.png'
     parse_name = im_name.replace('.jpg', '.png')
@@ -42,17 +42,20 @@ def main_cut_and_paste(category, db_dir, target_name='target.jpg'):
 
     # /opt/ml/user_db/input/buffer/target/target.jpg
 
-    origin_image = Image.open(os.path.join(dataroot, 'input/buffer/target', im_name))
+    # origin_image = Image.open(os.path.join(dataroot, 'input/buffer/target', im_name))
+    origin_image = Image.open(io.BytesIO(target_bytes))
     origin_image = origin_image.resize((384,512))
     origin_np = np.array(origin_image)
 
     # /opt/ml/user_db/ladi/buffer/lower_body.png
 
-    generatived_image = Image.open(os.path.join(dataroot, 'ladi/buffer', f'{category}.png'))
+    # generatived_image = Image.open(os.path.join(dataroot, 'ladi/buffer', f'{category}.png'))
+    generatived_image = finalResult_img
     generatived_np = np.array(generatived_image)
 
 
-    im_parse = Image.open(os.path.join(dataroot, 'schp/buffer', parse_name))
+    # im_parse = Image.open(os.path.join(dataroot, 'schp/buffer', parse_name))
+    im_parse = schp_img
     im_parse = im_parse.resize((384, 512), Image.NEAREST)
     parse_array = np.array(im_parse)
 
@@ -102,4 +105,5 @@ def main_cut_and_paste(category, db_dir, target_name='target.jpg'):
     #     print('파일있냐')
     #     os.remove(file)
     
-    result_array.save(os.path.join(dataroot, 'ladi/buffer', f'{category}.png'))
+    return result_array
+    # result_array.save(os.path.join(dataroot, 'ladi/buffer', f'{category}.png'))
