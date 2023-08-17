@@ -132,7 +132,6 @@ class DressCodeDataset(data.Dataset):
             # Clothing image
             cloth = Image.open(os.path.join(dataroot, 'input/buffer/garment', c_name))
 
-            #############수정 해야함 !! test로 mask 없앰
             # mask = Image.open(os.path.join(dataroot, 'mask/buffer', c_name.replace(".jpg", ".png")))
             mask = Image.open(os.path.join(dataroot, 'mask/buffer', c_name))
 

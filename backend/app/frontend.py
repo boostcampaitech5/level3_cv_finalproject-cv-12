@@ -299,7 +299,7 @@ def main():
                 import time
                 t = time.time()
                 response = requests.post("http://localhost:8001/order", files=files)
-                response.raise_for_status() ## 200이 아니면 예외처리
+                # response.raise_for_status() ## 200이 아니면 예외처리
                 print('total processing time: ', time.time() - t)
                 
                 empty_slot.empty()
@@ -310,7 +310,8 @@ def main():
                 if category =='upper_lower':
                     final_img = Image.open(os.path.join(final_result_dir, 'lower_body.png'))
                 else : 
-                    final_img = Image.open(os.path.join(final_result_dir, f'{category}.png'))
+                    # final_img = Image.open(os.path.join(final_result_dir, f'{category}.png'))
+                    final_img = response.content
                 
                 st.write(' ')
                 st.write(' ')

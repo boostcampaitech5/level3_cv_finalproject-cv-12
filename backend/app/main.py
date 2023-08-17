@@ -1,9 +1,8 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.param_functions import Depends
-from pydantic import BaseModel, Field
+from fastapi.responses import StreamingResponse
 from uuid import UUID, uuid4
 from typing import List, Union, Optional, Dict, Any
-from datetime import datetime
 from PIL import Image
 import io
 
@@ -23,7 +22,7 @@ sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/model/ladi_vton/src/utils'
 
 from get_clothing_mask import main_mask, main_mask_fromImageByte
 
-from inference import main_ladi
+from inference import main_ladi, main_ladi_fromImageByte
 from face_cut_and_paste import main_cut_and_paste
 
 import torch
@@ -38,6 +37,10 @@ import shutil
 
 sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/backend/gcp')
 from cloud_storage import GCSUploader, load_gcp_config_from_yaml
+
+
+sys.path.append('/opt/ml/level3_cv_finalproject-cv-12/backend/app')
+from .utils import PIL2Byte
 
 app = FastAPI()
 ladi_models = None
@@ -158,13 +161,14 @@ def inference_allModels(target_bytes, garment_bytes, category, db_dir):
 
     garment_mask.save('./garment_mask.jpg')
 
-    exit()
     # ladi-vton 
     output_ladi_buffer_dir = os.path.join(db_dir, 'ladi/buffer')
     os.makedirs(output_ladi_buffer_dir, exist_ok=True)
 
-    main_ladi(category, db_dir, output_ladi_buffer_dir, ladi_models)
-    main_cut_and_paste(category, db_dir)
+    # main_ladi(category, db_dir, output_ladi_buffer_dir, ladi_models)
+    finalResult_img = main_ladi_fromImageByte(category, target_bytes, schp_img, keypoint_dict, garment_bytes, garment_mask, ladi_models)
+    finalResult_img = main_cut_and_paste(category, target_bytes, finalResult_img, schp_img)
+    return finalResult_img
 
 def inference_ladi(category, db_dir, target_name='target.jpg'):
     input_dir = os.path.join(db_dir, 'input')
@@ -231,7 +235,7 @@ async def make_order(files: List[UploadFile] = File(...)):
         garment_image_lower.save(f'{input_dir}/buffer/garment/lower_body.jpg')
 
         
-        inference_allModels('upper_body', db_dir)
+        finalResult_img = inference_allModels('upper_body', db_dir)
         shutil.copy(os.path.join(db_dir, 'ladi/buffer', 'upper_body.png'), f'{input_dir}/buffer/target/upper_body.jpg')
         inference_ladi('lower_body', db_dir, target_name='upper_body.jpg')
 
@@ -253,6 +257,8 @@ async def make_order(files: List[UploadFile] = File(...)):
 
         gcs.upload_blob(garment_bytes, f'{input_dir}/buffer/garment/{category}.jpg')
 
-        inference_allModels(target_bytes, garment_bytes, category, user_name)
+        finalResult_img = inference_allModels(target_bytes, garment_bytes, category, user_name)
 
-    return None
+    finalResult_bytes = PIL2Byte(finalResult_img)
+    gcs.upload_blob(finalResult_bytes, f'{input_dir}/ladi/buffer/final.jpg')
+    return StreamingResponse(io.BytesIO(finalResult_bytes), media_type="image/jpg")
