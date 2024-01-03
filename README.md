@@ -25,5 +25,5 @@
 
 
 ## 시연 영상 
-<video src="img/demo.mp4" controls title="Title"></video> 
+<img src="img/demo.gif" controls title="Title"></img> 
 - processing time : 8~12sec
